@@ -6,7 +6,8 @@ import json
 from twilio.rest import Client
 from twilio.twiml.messaging_response import Message, MessagingResponse
 from flask_ngrok import run_with_ngrok
-
+import nlp_model
+import helperFunctions
 app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SESSION_TYPE'] = 'filesystem'
@@ -18,37 +19,38 @@ account_sid = Constants.TWILIO_ACCOUNT_SID
 auth_token = Constants.TWILIO_AUTH_TOKEN
 client = Client(account_sid, auth_token)
 
+@app.route("/")
+def get_account_details():
+    # session['account_no'] = "201770161001"
+    # session['account_type'] = "D"
+    session_str = json.dumps(dict(session))
+    helperFunctions.send_message('Hello! Welcome to OCBC Whatsapp Banking. What would you like to do today?')
+    return session_str
 
 @app.route("/getReply", methods=['POST'])
 def get_message_reply():
     incoming_message = request.form['Body']  # Extract the incoming message content
-
+    print(incoming_message)
     response = MessagingResponse()
     message = response.message()  # Create a new message within the response
     message.body("You said: {incoming_message}. This is your custom response.")  # Set the message content
-
     print(str(response))  # Print the TwiML response (including the message)
-
+    endpoint = nlp_model.generate_reply(incoming_message) #The relevant endpoints will be generated from the model to reply in whatsapp
+    url = Constants.HOST_URL + endpoint
+    res = requests.get(url)
+    print(str(res))
     return str(response)  # Return the response as the HTTP response
+    
+@app.route("/unableToFindReply")
+def reply_with_none():
+    helperFunctions.send_message('We are unable to find a reply for this.')
+    return
 
-
-@app.route("/")
-def get_account_details():
-    session['account_no'] = "201770161001"
-    session['account_type'] = "D"
-    session_str = json.dumps(dict(session))
-    message = client.messages.create(
-    from_='whatsapp:+14155238886',
-    body='Hello! Welcome to OCBC Whatsapp Banking. What would you like to do today?',
-    to='whatsapp:+6597988922'
-    )
-    print(message.sid)
-    return session_str
 
 # OCBC APIs
 @app.route("/accountSummary")
 def account_summary():
-    url = "https://api.ocbc.com:8243/transactional/account/1.0/summary*?accountNo="+session["account_no"]+"&accountType=" +session["account_type"]
+    url = "https://api.ocbc.com:8243/transactional/account/1.0/summary*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
     payload={}
     headers = {
     'Authorization': 'Bearer 901b6881-359b-358e-adee-ef6b2bc1a3cd',
@@ -62,7 +64,7 @@ def account_summary():
 
 @app.route("/checkBalance")
 def get_account_balance():
-    accountNo = session["account_no"]
+    accountNo = Constants.ACCOUNT_NO
     url = "https://api.ocbc.com:8243/transactional/accountbalance/1.0/balance*?accountNo=" + accountNo
     payload={}
     headers = {
@@ -70,6 +72,7 @@ def get_account_balance():
     }
     response = requests.request("GET", url, headers=headers, data=payload)
     print(response.text)
+    helperFunctions.send_message(response.text)
     return response.text
 
 @app.route("/balanceEnquiry")
@@ -78,15 +81,15 @@ def balance_enquiry():
     url = "https://api.ocbc.com:8243/transactional/corp/balance/1.0/enquiry"
 
     payload = json.dumps({
-    "AccountNo": session["account_no"],
-    "AccountType": session["account_type"],
+    "AccountNo": Constants.ACCOUNT_NO,
+    "AccountType": Constants.ACCOUNT_TYPE,
     "AccountCurrency": "SGD",
     "AccountBIC": "OCBCSGSGXXX",
     "TimeDepositNo": "129"
     })
     headers = {
     'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN,
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json'
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
@@ -102,11 +105,11 @@ def transfer_money():
     "Amount": 100,
     "ProxyType": "MSISDN",
     "ProxyValue": "+6594XXX567",
-    "FromAccountNo": session["account_no"]
+    "FromAccountNo": Constants.ACCOUNT_NO
     })
     headers = {
     'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN,
-    'Content-Type': 'application/json',
+    'Content-Type': 'application/json'
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
@@ -123,8 +126,8 @@ def paynow_enquiry():
     "ProxyValue": "+6597988922" #OR S9801118H
     })    
     headers = {
-    'Authorization': 'Bearer 901b6881-359b-358e-adee-ef6b2bc1a3cd',
-    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN,
+    'Content-Type': 'application/json'
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
@@ -135,7 +138,7 @@ def paynow_enquiry():
 
 @app.route("/last6MonthsStatement")
 def last_6month_statement():
-    url = "https://api.ocbc.com:8243/transactional/account/1.0/recentAccountActivity*?accountNo="+session["account_no"]+"&accountType=" +session["account_type"]
+    url = "https://api.ocbc.com:8243/transactional/account/1.0/recentAccountActivity*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
 
     payload={}
     headers = {
