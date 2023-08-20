@@ -18,7 +18,7 @@ Forwarding                    https://f0fb-118-200-109-192.ngrok.io -> http://lo
 ```
 Copy the webhook with 'https' and change it in the twilio consile + /getReply
 e.g. https://f0fb-118-200-109-192.ngrok.io
-![Alt text](TwilioConsole-1.png)
+![Alt text](images/TwilioConsole-1.png)
 
 Twilio Account:
 Username: gerald_4231@hotmail.com
