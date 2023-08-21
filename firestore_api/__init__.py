@@ -9,7 +9,6 @@ def create_app():
     app = Flask(__name__)
 
     from .api import userAPI
-
     app.register_blueprint(userAPI, url_prefix='/user')
 
     return app
