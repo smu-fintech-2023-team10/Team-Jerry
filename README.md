@@ -2,10 +2,14 @@
 **For Testing**
 **Setup**
 ```
+#Install dependencies
+pip install -r requirements.txt
+
 #Run
 python main.py
 
 ```
+- Next, you need to install ngrok by just double clicking ngrok.exe
 
 You will see this webhook created for receiving messages from Twilio
 ```
