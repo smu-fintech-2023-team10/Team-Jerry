@@ -1,3 +1,4 @@
+from firestore_api import create_app
 from flask import Flask, request, session
 from flask_session import Session  # Import the Session extension
 import requests
@@ -5,7 +6,9 @@ import Constants
 import json
 import nlp_model
 import helperFunctions
-app = Flask(__name__)
+
+app = create_app()
+# app = Flask(__name__)
 app.config['DEBUG'] = True
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Set session timeout to 1 hour (in seconds)
@@ -123,9 +126,3 @@ def last_6month_statement():
 
 if __name__ == '__main__':
     app.run()
-
-
-
-
-
-
