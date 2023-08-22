@@ -1,3 +1,4 @@
+from firestore_api import create_app
 from flask import Flask, request, session
 from flask_session import Session  # Import the Session extension
 import requests
@@ -8,7 +9,9 @@ from twilio.twiml.messaging_response import Message, MessagingResponse
 from flask_ngrok import run_with_ngrok
 import nlp_model
 import helperFunctions
-app = Flask(__name__)
+
+app = create_app()
+
 app.config['DEBUG'] = True
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Set session timeout to 1 hour (in seconds)
@@ -18,6 +21,7 @@ Session(app)  # Initialize the Session extension
 account_sid = Constants.TWILIO_ACCOUNT_SID
 auth_token = Constants.TWILIO_AUTH_TOKEN
 client = Client(account_sid, auth_token)
+
 
 @app.route("/")
 def get_account_details():
