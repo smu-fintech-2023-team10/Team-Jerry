@@ -4,7 +4,7 @@
 ```
 #Install dependencies
 pip install -r requirements.txt
-
+pip install firebase-admin --user
 #Run
 python main.py
 
@@ -37,3 +37,5 @@ Scan the QR code and follow the instructions below
 
 **Moving Forward**
 - Host on AWS or GCP so dont need use webhook as the ngrok webhook always changes everytime the app is re-ran, then must go inside twilio config to change.
+
+ocbcbanking123@
