@@ -1,14 +1,34 @@
-from firestore_api import create_app
-from flask import Flask, request, session
-from flask_session import Session  # Import the Session extension
+# External imports
 import requests
-import Constants
-import json
+import time
 from twilio.rest import Client
 from twilio.twiml.messaging_response import Message, MessagingResponse
 from flask_ngrok import run_with_ngrok
+from datetime import datetime, timedelta
+from flask import Flask, request, session
+from flask_session import Session  # Import the Session extension
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
+import firebase_admin
+from firebase_admin import db, credentials, firestore
+from time import sleep
+import os
+from twilio.jwt.access_token import AccessToken
+from twilio.jwt.access_token.grants import ChatGrant
+from dotenv import load_dotenv
+
+cred = credentials.Certificate("firestore_api/key.json")
+firebase_admin.initialize_app(cred, {"databaseURL": "https://team-jerry-default-rtdb.asia-southeast1.firebasedatabase.app/"})
+
+# Internal imports
+import Constants
+import json
 import nlp_model
 import helperFunctions
+from firestore_api import create_app
+from firestore_api.api import get_token_refresh_time
+
+# Load the environment variables from .env file
 
 app = create_app()
 
@@ -17,10 +37,35 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Set session timeout to 1 hour (in seconds)
 run_with_ngrok(app)
 Session(app)  # Initialize the Session extension
+load_dotenv()
 
-account_sid = Constants.TWILIO_ACCOUNT_SID
-auth_token = Constants.TWILIO_AUTH_TOKEN
-client = Client(account_sid, auth_token)
+@app.route("/test", methods=['GET'])
+def refresh_twilio_auth_token():
+    root_ref = db.reference()
+    # Get a reference to the specific user node using the provided user_id
+    token = root_ref.child('auth_token').child('token').get()
+    # Shut down the scheduler when exiting the app
+    print("start")
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    auth_token = token
+    client = Client(account_sid, auth_token)
+    auth_token_promotion = client.accounts.v1.auth_token_promotion().update()
+    new_primary_auth_token = auth_token_promotion.auth_token
+    client = Client(account_sid, new_primary_auth_token)
+    print(client)
+    secondary_auth_token = client.accounts.v1.secondary_auth_token().create()
+    new_secondary_auth_token = secondary_auth_token.secondary_auth_token
+
+   
+    auth_token_ref = root_ref.child('auth_token')
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+    auth_token_ref.update({
+        'secondary_token': new_secondary_auth_token,
+        'token': new_primary_auth_token,
+        'time': current_time
+    })
+    print("Token Updated")
+    return client
 
 
 @app.route("/")
@@ -38,7 +83,7 @@ def get_message_reply():
     print(incoming_message)
     print(sender_phone_number)
     if incoming_message == "join signal-press":
-        helperFunctions.send_message('Hello! Welcome to OCBC Whatsapp Banking. What would you like to do today?', sender_phone_number)
+        helperFunctions.send_message('Hello! Welcome to OCBC Whatsapp Banking. What would you like to do today?', sender_phone_number, client)
     else:
         endpoint = nlp_model.generate_reply(incoming_message) #The relevant endpoints will be generated from the model to reply in whatsapp
         url = Constants.HOST_URL + endpoint
@@ -54,7 +99,7 @@ def get_message_reply():
 def reply_with_none():
     data = request.json
     phone_number = data.get('phoneNumber')  # Extract phone number from the JSON data
-    helperFunctions.send_message('We are unable to find a reply for this.', phone_number)
+    helperFunctions.send_message('We are unable to find a reply for this.', phone_number, client)
     return 'We are unable to find a reply for this.'
 
 
@@ -64,7 +109,7 @@ def account_summary():
     url = "https://api.ocbc.com:8243/transactional/account/1.0/summary*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
     payload={}
     headers = {
-    'Authorization': 'Bearer 901b6881-359b-358e-adee-ef6b2bc1a3cd',
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
     }
 
     response = requests.request("GET", url, headers=headers, data=payload)
@@ -81,11 +126,11 @@ def get_account_balance():
     url = "https://api.ocbc.com:8243/transactional/accountbalance/1.0/balance*?accountNo=" + account_number
     payload={}
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN")
     }
     response = requests.request("GET", url, headers=headers, data=payload)
     print(response.text)
-    helperFunctions.send_message(response.text, phone_number)
+    helperFunctions.send_message(response.text, phone_number, client)
     return response.text
 
 @app.route("/balanceEnquiry", methods=['POST'])
@@ -101,7 +146,7 @@ def balance_enquiry():
     "TimeDepositNo": "129"
     })
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN,
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
     'Content-Type': 'application/json'
     }
 
@@ -121,7 +166,7 @@ def transfer_money():
     "FromAccountNo": Constants.ACCOUNT_NO
     })
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN,
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
     'Content-Type': 'application/json'
     }
 
@@ -139,7 +184,7 @@ def paynow_enquiry():
     "ProxyValue": "+6597988922" #OR S9801118H
     })    
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN,
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
     'Content-Type': 'application/json'
     }
 
@@ -155,7 +200,7 @@ def last_6month_statement():
 
     payload={}
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN")
     }
 
     response = requests.request("GET", url, headers=headers, data=payload)
@@ -165,4 +210,12 @@ def last_6month_statement():
 
 
 if __name__ == '__main__':
-    app.run()
+    client = refresh_twilio_auth_token()
+    # Set up the scheduler
+    scheduler = BackgroundScheduler()
+    scheduler.add_job(refresh_twilio_auth_token, 'interval', hours=20)
+    scheduler.start()
+    app.run()  # adjust host and port as needed
+
+
+# revalidate token
