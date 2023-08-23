@@ -15,6 +15,7 @@ from time import sleep
 import os
 from twilio.jwt.access_token import AccessToken
 from twilio.jwt.access_token.grants import ChatGrant
+from dotenv import load_dotenv
 
 cred = credentials.Certificate("firestore_api/key.json")
 firebase_admin.initialize_app(cred, {"databaseURL": "https://team-jerry-default-rtdb.asia-southeast1.firebasedatabase.app/"})
@@ -27,6 +28,8 @@ import helperFunctions
 from firestore_api import create_app
 from firestore_api.api import get_token_refresh_time
 
+# Load the environment variables from .env file
+
 app = create_app()
 
 app.config['DEBUG'] = True
@@ -34,34 +37,35 @@ app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Set session timeout to 1 hour (in seconds)
 run_with_ngrok(app)
 Session(app)  # Initialize the Session extension
-
-account_sid = Constants.TWILIO_ACCOUNT_SID
-auth_token = Constants.TWILIO_AUTH_TOKEN
-api_key = Constants.TWILIO_API_KEY
-api_secret = Constants.API_SECRET
-client = Client(account_sid, auth_token)
+load_dotenv()
 
 @app.route("/test", methods=['GET'])
 def refresh_twilio_auth_token():
-    # Shut down the scheduler when exiting the app
-    print("startanr")
-    account_sid = Constants.TWILIO_ACCOUNT_SID
     root_ref = db.reference()
     # Get a reference to the specific user node using the provided user_id
-    last_refresh_time = root_ref.child('auth_token').child('time').get()
     token = root_ref.child('auth_token').child('token').get()
-    print(token)
-    print(last_refresh_time)
-    client = Client(account_sid, token)
-    auth_token = client.tokens.create()
-    print(type(auth_token))
-    # auth_token_ref = root_ref.child('auth_token')
-    # current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
-    # auth_token_ref.update({
-    #     'token': auth_token,  # or another appropriate attribute if `sid` isn't what you're looking for
-    #     'time': current_time
-    # })
-    return {"lastRefreshDateTime:":last_refresh_time, "oldAuthToken":token}
+    # Shut down the scheduler when exiting the app
+    print("start")
+    account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+    auth_token = token
+    client = Client(account_sid, auth_token)
+    auth_token_promotion = client.accounts.v1.auth_token_promotion().update()
+    new_primary_auth_token = auth_token_promotion.auth_token
+    client = Client(account_sid, new_primary_auth_token)
+    print(client)
+    secondary_auth_token = client.accounts.v1.secondary_auth_token().create()
+    new_secondary_auth_token = secondary_auth_token.secondary_auth_token
+
+   
+    auth_token_ref = root_ref.child('auth_token')
+    current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
+    auth_token_ref.update({
+        'secondary_token': new_secondary_auth_token,
+        'token': new_primary_auth_token,
+        'time': current_time
+    })
+    print("Token Updated")
+    return client
 
 
 @app.route("/")
@@ -79,7 +83,7 @@ def get_message_reply():
     print(incoming_message)
     print(sender_phone_number)
     if incoming_message == "join signal-press":
-        helperFunctions.send_message('Hello! Welcome to OCBC Whatsapp Banking. What would you like to do today?', sender_phone_number)
+        helperFunctions.send_message('Hello! Welcome to OCBC Whatsapp Banking. What would you like to do today?', sender_phone_number, client)
     else:
         endpoint = nlp_model.generate_reply(incoming_message) #The relevant endpoints will be generated from the model to reply in whatsapp
         url = Constants.HOST_URL + endpoint
@@ -95,7 +99,7 @@ def get_message_reply():
 def reply_with_none():
     data = request.json
     phone_number = data.get('phoneNumber')  # Extract phone number from the JSON data
-    helperFunctions.send_message('We are unable to find a reply for this.', phone_number)
+    helperFunctions.send_message('We are unable to find a reply for this.', phone_number, client)
     return 'We are unable to find a reply for this.'
 
 
@@ -105,7 +109,7 @@ def account_summary():
     url = "https://api.ocbc.com:8243/transactional/account/1.0/summary*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
     payload={}
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN,
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
     }
 
     response = requests.request("GET", url, headers=headers, data=payload)
@@ -122,11 +126,11 @@ def get_account_balance():
     url = "https://api.ocbc.com:8243/transactional/accountbalance/1.0/balance*?accountNo=" + account_number
     payload={}
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN")
     }
     response = requests.request("GET", url, headers=headers, data=payload)
     print(response.text)
-    helperFunctions.send_message(response.text, phone_number)
+    helperFunctions.send_message(response.text, phone_number, client)
     return response.text
 
 @app.route("/balanceEnquiry", methods=['POST'])
@@ -142,7 +146,7 @@ def balance_enquiry():
     "TimeDepositNo": "129"
     })
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN,
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
     'Content-Type': 'application/json'
     }
 
@@ -162,7 +166,7 @@ def transfer_money():
     "FromAccountNo": Constants.ACCOUNT_NO
     })
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN,
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
     'Content-Type': 'application/json'
     }
 
@@ -180,7 +184,7 @@ def paynow_enquiry():
     "ProxyValue": "+6597988922" #OR S9801118H
     })    
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN,
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
     'Content-Type': 'application/json'
     }
 
@@ -196,7 +200,7 @@ def last_6month_statement():
 
     payload={}
     headers = {
-    'Authorization': 'Bearer ' + Constants.ACCESS_TOKEN
+    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN")
     }
 
     response = requests.request("GET", url, headers=headers, data=payload)
@@ -204,33 +208,13 @@ def last_6month_statement():
     print(response.text)
     return response.text
 
-def is_time_more_than_x_hours(input_time_str_with_hour,hours):
-    # Convert the input time string with hour to a datetime object
-    input_time = datetime.strptime(input_time_str_with_hour, '%Y-%m-%d %H:%M:%S')
-
-    # Get the current time
-    current_time = datetime.now()
-
-    # Calculate the time difference between input time and current time
-    time_difference = input_time - current_time
-
-    # Define a timedelta for 20 hours
-    twenty_hours = timedelta(hours=hours)
-
-    # Compare the time difference with twenty_hours
-    if time_difference > twenty_hours:
-        return True
-    else:
-        return False
-
-
 
 if __name__ == '__main__':
+    client = refresh_twilio_auth_token()
     # Set up the scheduler
     scheduler = BackgroundScheduler()
     scheduler.add_job(refresh_twilio_auth_token, 'interval', hours=20)
     scheduler.start()
-    refresh_twilio_auth_token()
     app.run()  # adjust host and port as needed
 
 
