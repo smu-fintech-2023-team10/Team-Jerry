@@ -1,3 +1,5 @@
+# Front-end test for Chat GPT chatbot to showcase the capabilities of ChatGPT for this use case #
+
 import openai
 import gradio as gr 
 import os 
@@ -9,6 +11,8 @@ load_dotenv()
 #OPENAI_API_KEY
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+
+#Generate Training String
 training_str = ""
 for intent, messages in INTENT_DICT.items():
     training_str += "Intent: " + intent + ", messages : "
@@ -22,6 +26,8 @@ please return 'I do not know what you are speaking about, please try something a
     {"role": "assistant", "content": "Hello, I am your virtual chatbot assistant for OCBC Virtual banking. How may I help you today?"}
 ]
 
+
+# Helper function for generating response
 def chatbot_response(user_input):
     global message_history
     message_history.append({"role": "user", "content": user_input})
@@ -38,6 +44,7 @@ def chatbot_response(user_input):
 
     return response 
 
+# Main function
 with gr.Blocks(theme=gr.themes.base) as demo:
     chatbot = gr.Chatbot()
     with gr.Row():

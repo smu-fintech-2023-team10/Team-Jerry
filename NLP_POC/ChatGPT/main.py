@@ -1,3 +1,5 @@
+# Test file to try the APIs of ChatGPT #
+
 import os
 import openai
 
@@ -10,7 +12,6 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 #Initial training
-
 def get_completion(prompt, model='gpt-3.5-turbo', temperature=0):
     messages = [{"role": "user", "content": prompt}]
     response = openai.ChatCompletion.create(
@@ -21,8 +22,7 @@ def get_completion(prompt, model='gpt-3.5-turbo', temperature=0):
     return response.choices[0].message["content"]
 
 
-#initial training
-
+#Testing training
 training_str = ""
 for intent, messages in INTENT_DICT.items():
     training_str += "Intent: " + intent + ", messages : "
@@ -35,14 +35,17 @@ please return 'I do not know what you are speaking about, please try something a
 
 final_str += training_str
 
+
+print("-------------Training String---------------")
 print(final_str)
 
+print("-------------Training Res---------------")
 training_res = get_completion(final_str)
 print(training_res)
 
+print("")
+print("-------------Test Prompt---------------")
 # To include history as prompts are isolated 
-test_prompt = "I want to transfer money"
+test_prompt = "I want to buy a car"
 
 print(get_completion(test_prompt))
-
-## Gradio test
