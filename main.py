@@ -5,7 +5,7 @@ from twilio.rest import Client
 from twilio.twiml.messaging_response import Message, MessagingResponse
 from flask_ngrok import run_with_ngrok
 from datetime import datetime, timedelta
-from flask import Flask, request, session
+from flask import Flask, request, session, jsonify
 from flask_session import Session  # Import the Session extension
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
@@ -17,9 +17,6 @@ from twilio.jwt.access_token import AccessToken
 from twilio.jwt.access_token.grants import ChatGrant
 from dotenv import load_dotenv
 
-cred = credentials.Certificate("firestore_api/key.json")
-firebase_admin.initialize_app(cred, {"databaseURL": "https://team-jerry-default-rtdb.asia-southeast1.firebasedatabase.app/"})
-
 # Internal imports
 import Constants
 import json
@@ -29,7 +26,6 @@ from flask_ngrok import run_with_ngrok
 import nlp_model
 import helperFunctions
 from firestore_api import create_app
-from firestore_api.api import get_token_refresh_time
 
 # Load the environment variables from .env file
 
@@ -212,23 +208,55 @@ def last_6month_statement():
     return response.text
 
 #Firestore RealtimeDB APIs
-@app.route('/addUser', methods=['POST'])
-def createUser():
+def get_auth_token_from_firebase():
     try:
-        id = uuid.uuid4()
         # Get a reference to the root of the Realtime Database
         root_ref = db.reference()
 
-        # Create a new child node with the generated UUID as the key
-        user_ref = root_ref.child('user').child(id.hex)
-        user_ref.set(request.json)
+        # Get a reference to the specific user node using the provided user_id
+        auth_token = root_ref.child('auth_token')
+
+        # Retrieve the user data
+        auth_token_data = auth_token.get()
+
+        return auth_token_data
+    except Exception as e:
+        return f"An Error occurred: {e}"
+
+
+@app.route('/add', methods=['POST'])
+def create():
+    try:
+        data = request.json  # Get the JSON data from the request body
+
+        id_value = data.get('id')  # Get the id_value from the JSON data, ID value is phone number as it is unique
+
+        # Get a reference to the root of the Realtime Database
+        root_ref = db.reference()
+
+        # Create a new child node with the provided id_value as the key
+        user_ref = root_ref.child('user').child(id_value)
+        user_ref.set(data)  # Use the parsed JSON data
 
         return jsonify({"success": True}), 200
     except Exception as e:
         return f"An Error occurred: {e}"
+    
+@app.route('/lastTokenRefreshTime', methods=['GET'])
+def get_token_refresh_time():
+        # Get a reference to the root of the Realtime Database
+        root_ref = db.reference()
 
-@app.route('/readUser/<user_id>', methods=['GET'])
-def readUser(user_id):
+        # Get a reference to the specific user node using the provided user_id
+        last_refresh_time = root_ref.child('auth_token').child('time').get()
+        token = root_ref.child('auth_token').child('token').get()
+        print(token)
+        print(last_refresh_time)
+        return {"lastRefreshDateTime:":last_refresh_time, "oldAuthToken":token}
+
+
+@app.route('/read/<user_id>', methods=['GET'])
+def read(user_id):
     try:
         # Get a reference to the root of the Realtime Database
         root_ref = db.reference()
@@ -246,8 +274,8 @@ def readUser(user_id):
     except Exception as e:
         return f"An Error occurred: {e}"
 
-@app.route('/updateUser/<user_id>', methods=['PUT'])
-def updateUser(user_id):
+@app.route('/update/<user_id>', methods=['PUT'])
+def update(user_id):
     try:
         # Get a reference to the root of the Realtime Database
         root_ref = db.reference()
@@ -262,8 +290,8 @@ def updateUser(user_id):
     except Exception as e:
         return f"An Error occurred: {e}"
 
-@app.route('/deleteUser/<user_id>', methods=['DELETE'])
-def deleteUser(user_id):
+@app.route('/delete/<user_id>', methods=['DELETE'])
+def delete(user_id):
     try:
         # Get a reference to the root of the Realtime Database
         root_ref = db.reference()
