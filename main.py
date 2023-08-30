@@ -74,7 +74,7 @@ def get_account_details():
     session_str = json.dumps(dict(session))
     
     return session_str
-
+#Todo: Brandon
 @app.route("/getReply", methods=['POST'])
 def get_message_reply():
     incoming_message = request.form['Body']  # Extract the incoming message content
@@ -82,9 +82,13 @@ def get_message_reply():
     print(incoming_message)
     print(sender_phone_number)
     if incoming_message == "join signal-press":
-        helperFunctions.send_message('Hello! Welcome to OCBC Whatsapp Banking. What would you like to do today?', sender_phone_number, client)
+        helperFunctions.send_message('Hello! Welcome to SMU Whatsapp Banking.', sender_phone_number, client)
     else:
         endpoint = nlp_model.generate_reply(incoming_message) #The relevant endpoints will be generated from the model to reply in whatsapp
+        #"/endpoint - message - {post request}"
+        # perform string manipulation
+        #Extract the endpoint
+        #create the message
         url = Constants.HOST_URL + endpoint
         data = {
             "accountNumber": Constants.ACCOUNT_NO,
