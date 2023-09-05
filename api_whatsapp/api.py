@@ -6,7 +6,6 @@ from twilio.twiml.messaging_response import Message, MessagingResponse
 from flask_ngrok import run_with_ngrok
 from datetime import datetime, timedelta
 from flask import Flask, request, session, Blueprint
-from flask_session import Session  # Import the Session extension
 from apscheduler.schedulers.background import BackgroundScheduler
 from time import sleep
 import os
@@ -28,7 +27,6 @@ whatsappMS = Blueprint('whatsappMS', __name__)
 load_dotenv()
 root_ref = db_reference
 
-@whatsappMS.route("/test", methods=['GET'])
 def refresh_twilio_auth_token():
     # Get a reference to the specific user node using the provided user_id
     token = root_ref.child('auth_token').child('token').get()
@@ -70,18 +68,14 @@ def get_message_reply():
     sender_phone_number = request.form['From'] # Extract the phone number
     print(incoming_message)
     print(sender_phone_number)
-    if incoming_message == "join signal-press":
-        helperFunctions.send_message('Hello! Welcome to OCBC Whatsapp Banking. What would you like to do today?', sender_phone_number, client)
-    else:
-        endpoint = nlp_model.generate_reply(incoming_message) #The relevant endpoints will be generated from the model to reply in whatsapp
-        url = Constants.HOST_URL + endpoint
-        data = {
-            "accountNumber": Constants.ACCOUNT_NO,
-            "phoneNumber": sender_phone_number,
-
-        }
-        res = requests.post(url, json=data)
-        print(str(res))
+    data = {
+        "message": incoming_message,
+        "userId": sender_phone_number
+    }
+    url = os.getenv("HOST_URL") + "/runModel"
+    res = requests.post(url, json=data)
+    helperFunctions.send_message("\n".join(json.loads(res.text)), sender_phone_number, client)
+    print(str(res))
     return incoming_message  # Return the response as the HTTP response
     
 @whatsappMS.route("/unableToFindReply", methods=['POST'])

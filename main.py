@@ -1,28 +1,6 @@
 # External imports
 import requests
 import time
-<<<<<<< HEAD
-from twilio.rest import Client
-from twilio.twiml.messaging_response import Message, MessagingResponse
-from flask_ngrok import run_with_ngrok
-from datetime import datetime, timedelta
-from flask import Flask, request, session, jsonify
-from flask_session import Session  # Import the Session extension
-from apscheduler.schedulers.background import BackgroundScheduler
-import atexit
-import firebase_admin
-from firebase_admin import db, credentials, firestore
-from time import sleep
-import os
-from twilio.jwt.access_token import AccessToken
-from twilio.jwt.access_token.grants import ChatGrant
-from dotenv import load_dotenv
-
-# Internal imports
-import Constants
-import json
-=======
->>>>>>> SS-54-Child-of-SubTask-SP-include-in-parent-Sub-Task-Automate-renewable-of-OAuth-Token
 from twilio.rest import Client
 from twilio.twiml.messaging_response import Message, MessagingResponse
 from flask_ngrok import run_with_ngrok
@@ -48,10 +26,7 @@ import json
 import nlp_model
 import helperFunctions
 from api_firestore import create_app
-<<<<<<< HEAD
-=======
 from api_firestore.api import get_token_refresh_time
->>>>>>> SS-54-Child-of-SubTask-SP-include-in-parent-Sub-Task-Automate-renewable-of-OAuth-Token
 
 # Load the environment variables from .env file
 
@@ -108,11 +83,7 @@ def get_message_reply():
     print(incoming_message)
     print(sender_phone_number)
     if incoming_message == "join signal-press":
-<<<<<<< HEAD
-        helperFunctions.send_message('Hello! Welcome to SMU Whatsapp Banking.', sender_phone_number, client)
-=======
         helperFunctions.send_message('Hello! Welcome to OCBC Whatsapp Banking. What would you like to do today?', sender_phone_number, client)
->>>>>>> SS-54-Child-of-SubTask-SP-include-in-parent-Sub-Task-Automate-renewable-of-OAuth-Token
     else:
         endpoint = nlp_model.generate_reply(incoming_message) #The relevant endpoints will be generated from the model to reply in whatsapp
         #"/endpoint - message - {post request}"
@@ -350,8 +321,4 @@ if __name__ == '__main__':
     app.run()  # adjust host and port as needed
 
 
-<<<<<<< HEAD
 # revalidate token
-=======
-# revalidate token
->>>>>>> SS-54-Child-of-SubTask-SP-include-in-parent-Sub-Task-Automate-renewable-of-OAuth-Token

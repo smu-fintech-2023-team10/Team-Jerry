@@ -49,44 +49,44 @@ def get_access_token():
     return credentials.token
 
 # ---- Routes #
-@dialogflowMS.route("/run_sample", methods=["POST"])
-def send_user_input():
-    data = request.json  # Get the JSON data from the request body
-    text = data.get('message')
-    # userId = data.get('userId')
+# @dialogflowMS.route("/run_sample", methods=["POST"])
+# def send_user_input():
+#     data = request.json  # Get the JSON data from the request body
+#     text = data.get('message')
+#     # userId = data.get('userId')
 
-    ## GEN SESS according to user ID TODO Dyanmic timeout session
-    userId = '84820351' #tmp
-    if userId not in userSession:
-        userSession[userId] = get_session_id(userId)
-    session_id = userSession[userId]
+#     ## GEN SESS according to user ID TODO Dyanmic timeout session
+#     userId = '84820351' #tmp
+#     if userId not in userSession:
+#         userSession[userId] = get_session_id(userId)
+#     session_id = userSession[userId]
         
-    print("Function ran")
-    project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
-    location_id = os.getenv("DIALOGFLOW_LOCATION_ID")
-    agent_id = os.getenv("DIALOGFLOW_AGENT_ID")
+#     print("Function ran")
+#     project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
+#     location_id = os.getenv("DIALOGFLOW_LOCATION_ID")
+#     agent_id = os.getenv("DIALOGFLOW_AGENT_ID")
 
-    logging.info("Session ID: {}".format(session_id))
-    agent = f'projects/{project_id}/locations/{location_id}/agents/{agent_id}/sessions/{session_id}'
+#     logging.info("Session ID: {}".format(session_id))
+#     agent = f'projects/{project_id}/locations/{location_id}/agents/{agent_id}/sessions/{session_id}'
 
-    language_code = "en-US"
+#     language_code = "en-US"
 
-    logging.info("Agent: {}".format(agent))
+#     logging.info("Agent: {}".format(agent))
 
-    response = detect_intent_texts(agent, text, language_code)
-    ## To store each message in 
-    return response
+#     response = detect_intent_texts(agent, text, language_code)
+#     ## To store each message in 
+#     return response
 
 
 # ---- Routes #
-@dialogflowMS.route("/test_run", methods=["POST"])
+@dialogflowMS.route("/runModel", methods=["POST"])
 def send_message():
     data = request.json  # Get the JSON data from the request body
     text = data.get('message')
-    # userId = data.get('userId')
+    userId = data.get('userId')
 
     ## GEN SESS according to user ID TODO Dyanmic timeout session
-    userId = '84820352' #tmp
+    # userId = '84820352' #tmp
     if userId not in userSession:
         userSession[userId] = get_session_id(userId)
     session_id = userSession[userId]
