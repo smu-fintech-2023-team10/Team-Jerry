@@ -1,2 +1,5 @@
 .env
 gcloud.json
+__pycache__/
+flask_session/
+firestore_api/__pycache__/
