@@ -12,9 +12,11 @@ google-resumable-media==2.5.0
 googleapis-common-protos==1.60.0
 flask-session==0.4.0
 requests==2.26.0
-twilio==6.68.0
+twilio
 flask-ngrok==0.0.25
 python-dotenv
 openai
-openai gradio 
-
+flask_session
+google-auth 
+google-auth-oauthlib 
+google-auth-httplib2
