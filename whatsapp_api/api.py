@@ -5,43 +5,31 @@ from twilio.rest import Client
 from twilio.twiml.messaging_response import Message, MessagingResponse
 from flask_ngrok import run_with_ngrok
 from datetime import datetime, timedelta
-from flask import Flask, request, session
+from flask import Flask, request, session, Blueprint
 from flask_session import Session  # Import the Session extension
 from apscheduler.schedulers.background import BackgroundScheduler
-import atexit
-import firebase_admin
-from firebase_admin import db, credentials, firestore
 from time import sleep
 import os
 from twilio.jwt.access_token import AccessToken
 from twilio.jwt.access_token.grants import ChatGrant
 from dotenv import load_dotenv
 
-# cred = credentials.Certificate("firestore_api/key.json")
-# firebase_admin.initialize_app(cred, {"databaseURL": "https://team-jerry-default-rtdb.asia-southeast1.firebasedatabase.app/"})
 
 # Internal imports
 import Constants
 import json
 import nlp_model
 import helperFunctions
-from firestore_api import create_app
+from firestore_api import create_app, db_reference
 from firestore_api.api import get_token_refresh_time
-
 # Load the environment variables from .env file
 
-app = create_app()
-
-app.config['DEBUG'] = True
-app.config['SESSION_TYPE'] = 'filesystem'
-app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Set session timeout to 1 hour (in seconds)
-run_with_ngrok(app)
-Session(app)  # Initialize the Session extension
+whatsappMS = Blueprint('whatsappMS', __name__)
 load_dotenv()
+root_ref = db_reference
 
-@app.route("/test", methods=['GET'])
+@whatsappMS.route("/test", methods=['GET'])
 def refresh_twilio_auth_token():
-    root_ref = db.reference()
     # Get a reference to the specific user node using the provided user_id
     token = root_ref.child('auth_token').child('token').get()
     # Shut down the scheduler when exiting the app
@@ -68,7 +56,7 @@ def refresh_twilio_auth_token():
     return client
 
 
-@app.route("/")
+@whatsappMS.route("/")
 def get_account_details():
     # session['account_no'] = "201770161001"
     # session['account_type'] = "D"
@@ -76,7 +64,7 @@ def get_account_details():
     
     return session_str
 
-@app.route("/getReply", methods=['POST'])
+@whatsappMS.route("/getReply", methods=['POST'])
 def get_message_reply():
     incoming_message = request.form['Body']  # Extract the incoming message content
     sender_phone_number = request.form['From'] # Extract the phone number
@@ -95,7 +83,7 @@ def get_message_reply():
         print(str(res))
     return incoming_message  # Return the response as the HTTP response
     
-@app.route("/unableToFindReply", methods=['POST'])
+@whatsappMS.route("/unableToFindReply", methods=['POST'])
 def reply_with_none():
     data = request.json
     phone_number = data.get('phoneNumber')  # Extract phone number from the JSON data
@@ -104,7 +92,7 @@ def reply_with_none():
 
 
 # OCBC APIs
-@app.route("/accountSummary", methods=['POST'])
+@whatsappMS.route("/accountSummary", methods=['POST'])
 def account_summary():
     url = "https://api.ocbc.com:8243/transactional/account/1.0/summary*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
     payload={}
@@ -118,7 +106,7 @@ def account_summary():
     return response.text
 
 
-@app.route("/checkBalance" , methods=['POST'])
+@whatsappMS.route("/checkBalance" , methods=['POST'])
 def get_account_balance():
     data = request.json  # Get the JSON data from the request body
     account_number = data.get('accountNumber')  # Extract account number from the JSON data
@@ -133,7 +121,7 @@ def get_account_balance():
     helperFunctions.send_message(response.text, phone_number, client)
     return response.text
 
-@app.route("/balanceEnquiry", methods=['POST'])
+@whatsappMS.route("/balanceEnquiry", methods=['POST'])
 def balance_enquiry():
 
     url = "https://api.ocbc.com:8243/transactional/corp/balance/1.0/enquiry"
@@ -155,7 +143,7 @@ def balance_enquiry():
     print(response.text)
     return response.text
 
-@app.route("/paynow")
+@whatsappMS.route("/paynow")
 def transfer_money():
     url = "https://api.ocbc.com:8243/transactional/paynow/1.0/sendPayNowMoney"
 
@@ -175,7 +163,7 @@ def transfer_money():
     print(response.text)
     return response.text
 
-@app.route("/paynowEnquiry", methods=['POST'])
+@whatsappMS.route("/paynowEnquiry", methods=['POST'])
 def paynow_enquiry():
     url = "https://api.ocbc.com:8243/transactional/paynowenquiry/1.0/payNowEnquiry"
 
@@ -194,7 +182,7 @@ def paynow_enquiry():
     return response.text
 
 
-@app.route("/last6MonthsStatement", methods=['POST'])
+@whatsappMS.route("/last6MonthsStatement", methods=['POST'])
 def last_6month_statement():
     url = "https://api.ocbc.com:8243/transactional/account/1.0/recentAccountActivity*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
 
@@ -209,13 +197,11 @@ def last_6month_statement():
     return response.text
 
 
-if __name__ == '__main__':
-    client = refresh_twilio_auth_token()
-    # Set up the scheduler
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(refresh_twilio_auth_token, 'interval', hours=20)
-    scheduler.start()
-    app.run()  # adjust host and port as needed
+# if __name__ == '__main__':
+client = refresh_twilio_auth_token()
+# Set up the scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(refresh_twilio_auth_token, 'interval', hours=20)
+scheduler.start()
+    # whatsappMS.run()  # adjust host and port as needed
 
-
-# revalidate token

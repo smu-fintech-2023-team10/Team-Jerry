@@ -4,7 +4,7 @@ from firebase_admin import credentials, db
 import requests
 import json
 
-userAPI = Blueprint('userAPI', __name__)
+firebaseMS = Blueprint('firebaseMS', __name__)
 
 
 def get_auth_token_from_firebase():
@@ -23,7 +23,7 @@ def get_auth_token_from_firebase():
         return f"An Error occurred: {e}"
 
 
-@userAPI.route('/add', methods=['POST'])
+@firebaseMS.route('/add', methods=['POST'])
 def create():
     try:
         data = request.json  # Get the JSON data from the request body
@@ -41,7 +41,7 @@ def create():
     except Exception as e:
         return f"An Error occurred: {e}"
     
-@userAPI.route('/lastTokenRefreshTime', methods=['GET'])
+@firebaseMS.route('/lastTokenRefreshTime', methods=['GET'])
 def get_token_refresh_time():
         # Get a reference to the root of the Realtime Database
         root_ref = db.reference()
@@ -54,7 +54,7 @@ def get_token_refresh_time():
         return {"lastRefreshDateTime:":last_refresh_time, "oldAuthToken":token}
 
 
-@userAPI.route('/read/<user_id>', methods=['GET'])
+@firebaseMS.route('/read/<user_id>', methods=['GET'])
 def read(user_id):
     try:
         # Get a reference to the root of the Realtime Database
@@ -73,7 +73,7 @@ def read(user_id):
     except Exception as e:
         return f"An Error occurred: {e}"
 
-@userAPI.route('/update/<user_id>', methods=['PUT'])
+@firebaseMS.route('/update/<user_id>', methods=['PUT'])
 def update(user_id):
     try:
         # Get a reference to the root of the Realtime Database
@@ -89,7 +89,7 @@ def update(user_id):
     except Exception as e:
         return f"An Error occurred: {e}"
 
-@userAPI.route('/delete/<user_id>', methods=['DELETE'])
+@firebaseMS.route('/delete/<user_id>', methods=['DELETE'])
 def delete(user_id):
     try:
         # Get a reference to the root of the Realtime Database
