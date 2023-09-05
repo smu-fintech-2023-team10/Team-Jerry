@@ -77,7 +77,8 @@ def get_message_reply():
         url = Constants.HOST_URL + endpoint
         data = {
             "accountNumber": Constants.ACCOUNT_NO,
-            "phoneNumber": sender_phone_number
+            "phoneNumber": sender_phone_number,
+
         }
         res = requests.post(url, json=data)
         print(str(res))
@@ -118,8 +119,14 @@ def get_account_balance():
     }
     response = requests.request("GET", url, headers=headers, data=payload)
     print(response.text)
-    helperFunctions.send_message(response.text, phone_number, client)
-    return response.text
+    resBody = json.loads(response.text)
+    print(resBody)
+    CurrencyCode= resBody['Results']['CurrencyCode']
+    AvailableBalance= resBody['Results']['AvailableBalance']
+    BalanceAsOfDate= resBody['Results']['BalanceAsOfDate']
+    resString = f'{CurrencyCode} {AvailableBalance}, as of : {BalanceAsOfDate}'
+    # helperFunctions.send_message(response.text, phone_number, client)
+    return {"balance": resString}
 
 @whatsappMS.route("/balanceEnquiry", methods=['POST'])
 def balance_enquiry():
