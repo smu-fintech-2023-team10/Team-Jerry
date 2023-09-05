@@ -1,4 +1,4 @@
-from flask import Flask, request
+from flask import Flask, request, Blueprint
 import hashlib
 import time 
 import requests 
@@ -13,9 +13,7 @@ import google.auth.transport.requests
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
-app = Flask(__name__)
-
-
+dialogflowMS = Blueprint('dialogflowMS', __name__)
 
 # ---- Helper functions #
 #TODO: Fix hashing algo + session stored in Firebase
@@ -33,7 +31,7 @@ def get_session_id():
     return shortened_hash
 
 def get_access_token():
-    SERVICE_ACCOUNT_FILE = './gcloud.json'
+    SERVICE_ACCOUNT_FILE = 'api_dialogflow/gcloud.json'
 
     credentials = service_account.Credentials.from_service_account_file(
         SERVICE_ACCOUNT_FILE,
@@ -48,7 +46,7 @@ def get_access_token():
     return credentials.token
 
 # ---- Routes #
-@app.route("/run_sample", methods=["POST"])
+@dialogflowMS.route("/run_sample", methods=["POST"])
 def send_user_input():
     data = request.json  # Get the JSON data from the request body
     text = data.get('message')  
@@ -106,6 +104,3 @@ def detect_intent_texts(agent, text, language_code):
     return response.json()  # return the response in case it's needed in future
 
 
-
-if __name__ == '__main__':
-    app.run(debug=True, port=8000)  # Change the port number as needed

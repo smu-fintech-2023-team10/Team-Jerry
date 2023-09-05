@@ -39,7 +39,7 @@ from twilio.jwt.access_token import AccessToken
 from twilio.jwt.access_token.grants import ChatGrant
 from dotenv import load_dotenv
 
-# cred = credentials.Certificate("firestore_api/key.json")
+# cred = credentials.Certificate("api_firestore/key.json")
 # firebase_admin.initialize_app(cred, {"databaseURL": "https://team-jerry-default-rtdb.asia-southeast1.firebasedatabase.app/"})
 
 # Internal imports
@@ -47,10 +47,10 @@ import Constants
 import json
 import nlp_model
 import helperFunctions
-from firestore_api import create_app
+from api_firestore import create_app
 <<<<<<< HEAD
 =======
-from firestore_api.api import get_token_refresh_time
+from api_firestore.api import get_token_refresh_time
 >>>>>>> SS-54-Child-of-SubTask-SP-include-in-parent-Sub-Task-Automate-renewable-of-OAuth-Token
 
 # Load the environment variables from .env file

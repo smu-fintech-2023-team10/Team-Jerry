@@ -7,7 +7,7 @@ from .api import firebaseMS
 # Check if Firebase app is already initialized
 if not firebase_admin._apps:
     # Initialize Firebase Admin SDK
-    cred = credentials.Certificate("firestore_api/key.json")
+    cred = credentials.Certificate("api_firestore/key.json")
     firebase_admin.initialize_app(cred, {"databaseURL": "https://team-jerry-default-rtdb.asia-southeast1.firebasedatabase.app/"})
 
 # Get a reference to the Firebase Realtime Database

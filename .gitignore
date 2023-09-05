@@ -2,4 +2,4 @@
 gcloud.json
 __pycache__/
 flask_session/
-firestore_api/__pycache__/
+api_firestore/__pycache__/

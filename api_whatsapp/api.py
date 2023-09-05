@@ -20,8 +20,8 @@ import Constants
 import json
 import nlp_model
 import helperFunctions
-from firestore_api import create_app, db_reference
-from firestore_api.api import get_token_refresh_time
+from api_firestore import create_app, db_reference
+from api_firestore.api import get_token_refresh_time
 # Load the environment variables from .env file
 
 whatsappMS = Blueprint('whatsappMS', __name__)

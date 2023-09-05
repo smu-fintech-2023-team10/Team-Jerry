@@ -10,9 +10,9 @@ from dotenv import load_dotenv
 
 
 # Internal imports
-from firestore_api.__init__ import register_firebaseMS
-from whatsapp_api.__init__ import register_whatsappMS
-from whatsapp_api.api import refresh_twilio_auth_token
+from api_firestore.__init__ import register_firebaseMS
+from api_whatsapp.__init__ import register_whatsappMS
+from api_dialogflow.__init__ import register_dialogflowMS
 
 
 
@@ -28,6 +28,7 @@ load_dotenv()
 
 if __name__ == '__main__':
     app = register_firebaseMS(app)
+    app = register_dialogflowMS(app)
     app = register_whatsappMS(app)
 
     app.run()  # adjust host and port as needed
