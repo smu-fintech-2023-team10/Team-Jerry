@@ -62,6 +62,11 @@ def get_account_details():
     
     return session_str
 
+@whatsappMS.route("/sendMessageTest", methods=['POST'])
+def sendMessageTest():
+
+    return "True"
+
 @whatsappMS.route("/getReply", methods=['POST'])
 def get_message_reply():
     incoming_message = request.form['Body']  # Extract the incoming message content
