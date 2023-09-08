@@ -17,8 +17,7 @@ SIDEBAR_STYLE = {
     "bottom": 0,
     "width": "16rem",
     "padding": "2rem 1rem",
-    # "background-color": "#081A51",
-    "background-color": "#f8f9fa",
+    "background-color": "#081A51",
 }
 
 CONTENT_STYLE = {
@@ -34,10 +33,10 @@ sidebar = html.Div(
         html.Hr(),
         dbc.Nav(
             [
-                dbc.NavLink("Overview", href="/overview", active="exact"),
-                dbc.NavLink("Check Balance", href="/check-balance", active="exact"),
-                dbc.NavLink("PayNow Transfer", href="/paynow-transfer", active="exact"),
-                dbc.NavLink("Scan To Pay", href="/scan-to-pay", active="exact")
+                dbc.NavLink("Overview", href="/overview", active="exact", className='text-light font-weight-bold'),
+                dbc.NavLink("Check Balance", href="/check-balance", active="exact", className='text-light font-weight-bold'),
+                dbc.NavLink("PayNow Transfer", href="/paynow-transfer", active="exact", className='text-light font-weight-bold'),
+                dbc.NavLink("Scan To Pay", href="/scan-to-pay", active="exact", className='text-light font-weight-bold')
             ],
             vertical=True,
             pills=True,
