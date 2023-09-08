@@ -1,0 +1,55 @@
+bank_function,date,transaction_time,account_number,recipient_number,amount,msgs_to_customer_support
+PayNow Transfer,2/8/23,8:30:15,34567890,98765432,1250.75,"[""I need help with a wire transfer."",  ""Can you assist with a loan application?"",  ""How can I open a new account?""]"
+PayNow Transfer,3/8/23,10:15:30,45678901,91234567,24.5,"[""I'm having trouble with my debit card."",  ""Is there a branch nearby I can visit?"",  ""I lost my checkbook. What should I do?""] "
+PayNow Transfer,4/8/23,11:20:45,56789012,95555555,3500.25,"[""I have a question about my mortgage."",  ""Can you provide information on investment options?"",  ""I need assistance with a foreign currency exchange.""] "
+PayNow Transfer,5/8/23,9:45:30,67890123,91234568,15.8,"[""I'm experiencing issues with online banking."",  ""What are the current CD rates?"",  ""Can you help me with a home equity line of credit?""] "
+PayNow Transfer,5/8/23,14:30:20,78901234,91111111,80.6,"[""I want to set up a recurring transfer."",  ""Is there a fee for using ATMs abroad?"",  ""Can you explain overdraft protection?""]"
+PayNow Transfer,4/8/23,15:45:55,89012345,97890124,2100.4,"[""I received a suspicious email. Is it from the bank?"",  ""Can you provide information on personal loans?"",  ""How can I order new checks?""] "
+PayNow Transfer,3/8/23,12:05:40,90123456,93333334,750.9,"[""I'm locked out of my online banking account."",  ""What's the process for applying for a credit card?"",  ""I'd like to update my contact information.""] "
+PayNow Transfer,2/8/23,13:30:10,12345678,92222223,5000.7,"[I need help with a wire transfer.,  ""Can you assist with a loan application?"",  ""How can I open a new account?""] "
+PayNow Transfer,1/8/23,16:15:05,23456789,98888889,30.3,"[""I'd like to change my account PIN."",  ""What's the bank's routing number?"",  ""Can you explain the different account fees?""]"
+PayNow Transfer,19/8/23,9:10:25,34567890,94444445,1750.1,"[""I'm traveling abroad. How can I notify the bank?"",  ""Can you help me with online bill pay?"", ""I'd like to apply for a small business loan.""]"
+PayNow Transfer,17/8/23,9:05:30,45678901,95555556,2.6,"[""I received a credit card statement. Can you clarify the charges?"",  ""How can I enroll in e-statements?"",  ""I need to update my account beneficiaries.""]"
+PayNow Transfer,18/8/23,14:30:45,56789012,93333335,900.75,"I suspect fraud on my account. What should I do?,  ""How can I set up automatic transfers?"",  ""What's the process for closing an account?""] "
+PayNow Transfer,17/8/23,11:30:55,67890123,98888890,13.2,[]
+PayNow Transfer,19/8/23,15:20:10,12345678,96666667,1750.55,"[""I'm interested in opening a joint account."",  ""What's the bank's holiday schedule?"",  ""I'd like to change my online banking password.""]"
+PayNow Transfer,18/8/23,17:45:20,23456789,94444446,22.9,"[""Can you assist with wire transfer instructions?"",  ""I need to order new debit cards."",  ""How can I set up direct deposit?""] "
+PayNow Transfer,21/8/23,10:55:30,34567890,95555557,280.7,"[""I received a suspicious call claiming to be from the bank. Is it legitimate?"",  ""How can I request account statements?"",  ""Can you provide information on retirement accounts?""]"
+PayNow Transfer,20/8/23,16:40:55,45678901,93333336,9.5,"[""I need help with a stop payment request."",  ""Can you assist with changing my contact information?"",  ""I'd like to request a credit limit increase.""]"
+PayNow Transfer,21/8/23,13:15:25,56789012,96666668,750.1,"[""I want to open a custodial account for my child."",  ""Can you provide information on credit counseling services?"",  ""I'd like to dispute a fee on my account.""]"
+PayNow Transfer,9/8/23,14:25:30,67890123,98888891,19.5,"[""I'm having trouble with mobile check deposit."",  ""How can I request a new debit card PIN?"",  ""I need assistance with redeeming rewards points.""] "
+PayNow Transfer,30/8/23,12:35:30,78901234,95555558,16.2,"[""I received a suspicious text message. Is it from the bank?"",  ""How can I request account statements?"",  ""Can you provide information on home equity loans?""] "
+PayNow Transfer,31/8/23,10:20:45,89012345,93333337,12.75,"[""I need help with a wire transfer."",  ""Can you assist with a loan application?"",  ""How can I open a new account?""]"
+PayNow Transfer,20/8/23,8:45:55,90123456,96666669,2350.4,"[""I'm having trouble with my debit card."",  ""Is there a branch nearby I can visit?"",  ""I lost my checkbook. What should I do?""] "
+PayNow Transfer,21/8/23,17:55:30,23456789,98888892,18.6,"[""I have a question about my mortgage."",  ""Can you provide information on investment options?"",  ""I need assistance with a foreign currency exchange.""] "
+PayNow Transfer,30/8/23,9:25:30,34567890,95555559,14.3,"[""I'm experiencing issues with online banking."",  ""What are the current CD rates?"",  ""Can you help me with a home equity line of credit?""] "
+PayNow Transfer,21/8/23,15:10:20,45678901,93333338,21.1,"[""I need help with a stop payment request."",  ""Can you assist with changing my contact information?"",  ""I'd like to request a credit limit increase.""]"
+PayNow Transfer,31/8/23,13:55:40,56789012,96666670,3200.9,"[""I want to open a custodial account for my child."",  ""Can you provide information on credit counseling services?"",  ""I'd like to dispute a fee on my account.""]"
+PayNow Transfer,10/6/23,11:40:10,67890123,98765432,8.6,"[""How long does the mortgage approval process take?"",  ""What are the documentation requirements for a mortgage application?""]"
+PayNow Transfer,15/6/23,16:30:55,78901234,91234567,275.4,[]
+PayNow Transfer,20/6/23,14:20:25,89012345,95555555,24.8,"[""What's the credit limit on the credit cards?"",  ""Are there any promotional offers for credit card applications?""]"
+PayNow Transfer,25/6/23,12:15:30,90123456,91234568,750.2,"[""What types of accounts can I open?"",  ""Do I need an initial deposit to open an account?""]"
+PayNow Transfer,1/7/23,9:50:15,34567890,91111111,18.75,"[""How much does it cost to stop a payment?"",  ""What's the process for stopping a check payment?""]"
+PayNow Transfer,5/7/23,17:15:30,12345678,97890124,1500.25,"[""What's the minimum credit score for a personal loan?"",  ""Are there any prepayment penalties for personal loans?""]"
+PayNow Transfer,10/7/23,11:05:45,23456789,93333334,22.7,"[""How can I reset my mobile banking app password?"",  ""Is the mobile app available for both Android and iOS?""]"
+PayNow Transfer,15/7/23,10:30:30,34567890,92222223,29.3,[]
+PayNow Transfer,20/7/23,15:25:20,45678901,94444445,16.5,[]
+PayNow Transfer,25/7/23,13:45:10,56789012,95555556,2150.9,"[""What's the loan-to-value ratio for home equity loans?"",  ""Are there any closing costs associated with home equity loans?""]"
+PayNow Transfer,1/6/23,8:50:05,67890123,93333335,22.7,"[""How is the interest rate for loans determined?"",  ""What's the maximum loan term available?""]"
+PayNow Transfer,6/6/23,16:50:45,78901234,98888890,10.5,"[""What's the minimum balance requirement for new accounts?"",  ""Can I open a joint account with a family member?""]"
+PayNow Transfer,11/6/23,14:55:15,89012345,96666667,135.6,"[""How can I change my PIN online?"",  ""Is there a fee for changing the PIN?""]"
+PayNow Transfer,16/6/23,12:40:20,90123456,98888891,27.9,"[""What should I do if my card is lost or stolen?"",  ""Can I expedite the replacement of my lost card?""]"
+PayNow Transfer,21/6/23,9:15:30,23456789,95555558,10.4,"[""What's the minimum down payment for a mortgage?"",  ""How does the mortgage application process work?""]"
+PayNow Transfer,26/6/23,17:40:30,34567890,93333337,1400.8,"[""How often are account statements generated?"",  ""Can I receive electronic statements instead of paper ones?""]"
+PayNow Transfer,2/7/23,10:45:55,45678901,98888892,25.1,"[""What documentation is needed to update my address?"",  ""Is there a fee for changing my address with the bank?""]"
+PayNow Transfer,7/7/23,11:35:20,56789012,92222224,19.7,"[""What investment products does the bank offer?"",  ""What's the minimum investment amount for brokerage accounts?""]"
+PayNow Transfer,12/7/23,15:35:45,67890123,94444444,27.5,[]
+PayNow Transfer,17/7/23,9:30:40,78901234,96666666,11.5,"[""What's the cutoff time for same-day wire transfers?"",  ""Are international wire transfers supported?""]"
+PayNow Transfer,3/6/23,14:10:55,89012345,93333335,23.5,"[""Can I open an account online?"",  ""What account types are suitable for savings?""]"
+PayNow Transfer,8/6/23,12:50:45,90123456,98888890,19.5,"[""How can I reset my PIN if I forget it?"",  ""Is there a limit to the number of PIN changes I can make?""]"
+PayNow Transfer,13/6/23,16:05:30,56789012,96666667,16.4,"[""What should I do if my card is lost or stolen?"",  ""Can I expedite the replacement of my lost card?""]"
+PayNow Transfer,18/6/23,10:00:15,67890123,98888891,1450.9,[]
+,,,,,,
+,,,,,,
+,,,,,,
+,,,,,,
