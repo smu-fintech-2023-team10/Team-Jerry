@@ -28,12 +28,12 @@ CONTENT_STYLE = {
 
 sidebar = html.Div(
     [   
-        html.Img(src=app.get_asset_url('team_jerry_logo.png'), style={'height':'10%', 'width':'80%'}),
+        html.Img(src=app.get_asset_url('team_jerry_logo.png'), style={'height':'5%', 'width':'100%'}),
 
         html.Hr(),
         dbc.Nav(
             [
-                dbc.NavLink("Overview", href="/overview", active="exact", className='text-light font-weight-bold'),
+                dbc.NavLink("Overview", href="/", active="exact", className='text-light font-weight-bold'),
                 dbc.NavLink("Check Balance", href="/check-balance", active="exact", className='text-light font-weight-bold'),
                 dbc.NavLink("PayNow Transfer", href="/paynow-transfer", active="exact", className='text-light font-weight-bold'),
                 dbc.NavLink("Scan To Pay", href="/scan-to-pay", active="exact", className='text-light font-weight-bold')
