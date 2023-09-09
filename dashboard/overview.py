@@ -1,6 +1,7 @@
 import dash
 import dash_bootstrap_components as dbc
 import dash_mantine_components as dmc
+from dash import dcc
 from dash_iconify import DashIconify
 from dash import html
 from dash import dcc
@@ -26,6 +27,7 @@ CONTENT_STYLE = {
     "margin-left": "18rem",
     "margin-right": "2rem",
     "padding": "2rem 1rem",
+    "background-color": "#F5F5F5",
 }
 
 sidebar = html.Div(
@@ -49,12 +51,40 @@ sidebar = html.Div(
 
 top_bar = html.Div(
     [
-        html.H1("Overview", style={"margin-left": "270px", "margin-top": "20px", "font-weight": "bold", "font-size": "40px"}),
-        html.Hr(),
-    ]
+        html.H1("Overview", style={"margin-left": "270px", "font-weight": "bold", "font-size": "40px",}),
+        html.Hr(style={"padding":"0px", "margin-top": "0px", "margin-bottom": "0px"}),
+    ],
+    style={"background-color": "#ffffff",},
 )
 
-content = html.Div(id="page-content", children=[], style=CONTENT_STYLE)
+# Create a data frame
+df = pd.DataFrame({
+    "Name": ["Check Balance", "Paynow Transfer", "Scan to Pay"],
+    "Value": [36, 40, 44]
+})
+
+fig = px.pie(
+    df,
+    values="Value",
+    names="Name",
+    title="Recognized Intent",
+    hole=0.6,
+    color_discrete_sequence=["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728"]
+)
+
+div_1a = html.Div(
+    dmc.Paper(
+            radius="lg",
+            withBorder=True,
+            shadow='xs',
+            p='sm',
+            style={'height':'500px'},
+            children=[dcc.Graph(figure=fig)]
+        )
+)
+
+
+content = html.Div(id="page-content", children=[div_1a], style=CONTENT_STYLE)
 
 app.layout = html.Div(
     children=[
@@ -62,7 +92,8 @@ app.layout = html.Div(
     sidebar,
     top_bar,
     content
-])
+],
+style={"background-color": "#F5F5F5"})
 
 if __name__=='__main__':
     app.run_server(debug=True, port=3000)
