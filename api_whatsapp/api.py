@@ -5,7 +5,7 @@ from twilio.rest import Client
 from twilio.twiml.messaging_response import Message, MessagingResponse
 from flask_ngrok import run_with_ngrok
 from datetime import datetime, timedelta
-from flask import Flask, request, session, Blueprint
+from flask import Flask, request, Blueprint
 from apscheduler.schedulers.background import BackgroundScheduler
 from time import sleep
 import os
@@ -54,13 +54,6 @@ def refresh_twilio_auth_token():
     return client
 
 
-@whatsappMS.route("/")
-def get_account_details():
-    # session['account_no'] = "201770161001"
-    # session['account_type'] = "D"
-    session_str = json.dumps(dict(session))
-    
-    return session_str
 
 @whatsappMS.route("/getReply", methods=['POST'])
 def get_message_reply():
@@ -144,33 +137,74 @@ def balance_enquiry():
     print(response.text)
     return response.text
 
-@whatsappMS.route("/paynow")
+@whatsappMS.route("/paynow", methods=['POST'])
 def transfer_money():
-    url = "https://api.ocbc.com:8243/transactional/paynow/1.0/sendPayNowMoney"
+    try:
+        data = request.json
+        amount = data.get("transferAmount")
+        phoneNumber = data.get("phoneNumber")
+        accountNum =  data.get("bankAccountNumber")
+        nric = data.get("nric")
+        if phoneNumber != "0":
+            ProxyType = "MSISDN"
+        else:
+            ProxyType = "NRIC"
 
-    payload = json.dumps({
-    "Amount": 100,
-    "ProxyType": "MSISDN",
-    "ProxyValue": "+6594XXX567",
-    "FromAccountNo": Constants.ACCOUNT_NO
-    })
-    headers = {
-    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
-    'Content-Type': 'application/json'
-    }
+        if ProxyType == "MSISDN":
+            proxyValue = phoneNumber
+        else:
+            proxyValue =  nric
+        payNowEnquiryData  = json.dumps({
+            "ProxyType": ProxyType,
+            "ProxyValue": proxyValue
+        })
+        payNowEnquiryHeaders = {
+                    'Content-Type': 'application/json',  # Example header
+                    # Add more headers as needed
+                }
+        payNowEnquiryResponse = requests.request("POST", os.getenv("HOST_URL")+"/paynowEnquiry" , headers=payNowEnquiryHeaders, data=payNowEnquiryData)
+        payNowEnquiryResponseBody = json.loads(payNowEnquiryResponse.text)
+        if payNowEnquiryResponseBody["isValid"] == "valid":
+            url = "https://api.ocbc.com:8243/transactional/paynow/1.0/sendPayNowMoney"
+            #{"phoneNumber": "$session.params.phone_number", "bankAccountNumber": "$session.params.bank_acc_number",,"nric": "$session.params.nric","transferAmount": "$intent.params.transfer_amount"}
+            payload = json.dumps({
+            "Amount": amount,
+            "ProxyType": ProxyType,
+            "ProxyValue": proxyValue,
+            "FromAccountNo": accountNum
+            })
+            print(payload)
+            headers = {
+            'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
+            'Content-Type': 'application/json'
+            }
 
-    response = requests.request("POST", url, headers=headers, data=payload)
+            response = requests.request("POST", url, headers=headers, data=payload)
 
-    print(response.text)
-    return response.text
+            print(response.text)
+            resBody = json.loads(response.text)
+            transationTime = resBody["Results"]["TransactionTime"]
+            transationDate = resBody["Results"]["TransactionDate"]
+            availableBalance = resBody["Results"]["AvailableBalance"]
+            approvalMessage = f'Your PayNow request of {amount} to {proxyValue} is approved.\nTransaction Time: {transationTime} \nTransaction Date: {transationDate}\nAvailable Balance: {availableBalance}'
+            print(approvalMessage)
+            return {"approvalMessage": approvalMessage}
+        else:
+            approvalMessage = f'Your PayNow request of {amount} to {proxyValue} is not approved. Please ensure you have entered a valid phone number or NRIC.'
+            return {"approvalMessage": approvalMessage}
+    except Exception as e:
+        return e
 
 @whatsappMS.route("/paynowEnquiry", methods=['POST'])
 def paynow_enquiry():
+    data = request.json
+    proxyType = data.get("ProxyType")
+    proxyValue = data.get("ProxyValue")
     url = "https://api.ocbc.com:8243/transactional/paynowenquiry/1.0/payNowEnquiry"
 
     payload = json.dumps({
-    "ProxyType": "MSISDN", #OR NRIC
-    "ProxyValue": "+6597988922" #OR S9801118H
+    "ProxyType": proxyType, #OR NRIC
+    "ProxyValue": proxyValue #OR S9801118H
     })    
     headers = {
     'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
@@ -178,9 +212,11 @@ def paynow_enquiry():
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
-
-    print(response.text)
-    return response.text
+    resBody = json.loads(response.text)
+    if resBody["Success"] == True:
+        return {"isValid": "valid"}
+    else:
+        return {"isValid": "invalid"}
 
 
 @whatsappMS.route("/last6MonthsStatement", methods=['POST'])

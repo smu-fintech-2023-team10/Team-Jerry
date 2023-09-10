@@ -121,7 +121,6 @@ def account_summary():
     print(response.text)
     return response.text
 
-
 @app.route("/checkBalance" , methods=['POST'])
 def get_account_balance():
     data = request.json  # Get the JSON data from the request body

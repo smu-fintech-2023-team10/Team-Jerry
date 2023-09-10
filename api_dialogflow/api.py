@@ -109,7 +109,8 @@ def send_message():
     print(response)
     return processedText
 
-
+#The dialogflow response should follow this format:
+# /endpoint-message with {dynamic} variables-POST request in {"key":"Value"} format
 def processRawDFMessage(rawMessage):
     messages = []
     for messageData in rawMessage:
@@ -130,6 +131,7 @@ def processRawDFMessage(rawMessage):
                 # Add more headers as needed
             }
             response = requests.request("POST", url , headers=headers, data=requestInput)
+            print(response)
             dict1 = json.loads(response.text)
             for key in dict1:
                 token = "{"+key+"}"
