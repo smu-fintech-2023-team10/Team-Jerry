@@ -178,24 +178,26 @@ def transfer_money():
             "ProxyValue": proxyValue,
             "FromAccountNo": accountNum
             })
-            print(payload)
             headers = {
             'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
             'Content-Type': 'application/json'
             }
 
             response = requests.request("POST", url, headers=headers, data=payload)
-
-            print(response.text)
             resBody = json.loads(response.text)
-            transationTime = resBody["Results"]["TransactionTime"]
-            transationDate = resBody["Results"]["TransactionDate"]
-            availableBalance = resBody["Results"]["AvailableBalance"]
-            approvalMessage = f'Your PayNow request of {amount} to {proxyValue} is approved.\nTransaction Time: {transationTime} \nTransaction Date: {transationDate}\nAvailable Balance: {availableBalance}'
-            print(approvalMessage)
-            return {"approvalMessage": approvalMessage}
+            print(resBody)
+            if resBody["Success"] == True:
+                transationTime = resBody["Results"]["TransactionTime"]
+                transationDate = resBody["Results"]["TransactionDate"]
+                availableBalance = resBody["Results"]["AvailableBalance"]
+                approvalMessage = f"Your PayNow request of ${amount} to {proxyValue} is successful.\nTransaction Time: {transationTime} \nTransaction Date: {transationDate}\nAvailable Balance: {availableBalance}"
+                return {"approvalMessage": approvalMessage}
+            else:
+                errorMsg = resBody["Results"]["ErrorMsg"]
+                approvalMessage = f"Your PayNow request of ${amount} to {proxyValue} is not approved.\n{errorMsg}"
+                return {"approvalMessage": approvalMessage}
         else:
-            approvalMessage = f'Your PayNow request of {amount} to {proxyValue} is not approved. Please ensure you have entered a valid phone number or NRIC.'
+            approvalMessage = f"Your PayNow request of ${amount} to {proxyValue} is not approved. Please ensure you have entered a valid phone number or NRIC."
             return {"approvalMessage": approvalMessage}
     except Exception as e:
         return e
@@ -218,6 +220,7 @@ def paynow_enquiry():
 
     response = requests.request("POST", url, headers=headers, data=payload)
     resBody = json.loads(response.text)
+    print(resBody["Success"])
     if resBody["Success"] == True:
         return {"isValid": "valid"}
     else:
