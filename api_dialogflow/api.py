@@ -105,9 +105,35 @@ def send_message():
     response = detect_intent_texts(agent, text, language_code)
 
     dialogflowMessageRaw = response['queryResult']['responseMessages']
-    processedText = processRawDFMessage(dialogflowMessageRaw)
-    print(response)
-    return processedText
+    # processedText = processRawDFMessage(dialogflowMessageRaw)
+    # print(response)
+    # return processedText
+    response_data = refractor_processRawDFMessage(dialogflowMessageRaw)
+    return response_data
+
+def refractor_processRawDFMessage(raw_message):
+    response_data = {
+        "message": "",
+        "endpoint": "",
+        "requestInput": ""
+    }
+    
+    for message_data in raw_message:
+        message = message_data['text']['text'][0]
+        process_message = message.split('-')
+        
+        if process_message[0] != '' and process_message[0][0] == '/':
+            endpoint = process_message[0]
+            message_var = process_message[1]
+            request_input = process_message[2]
+            
+            response_data["endpoint"] = endpoint
+            response_data["requestInput"] = request_input
+            response_data["message"] = message_var
+        else:
+            response_data["message"] = process_message[1]
+    
+    return response_data
 
 #The dialogflow response should follow this format:
 # /endpoint-message with {dynamic} variables-POST request in {"key":"Value"} format
@@ -123,7 +149,6 @@ def processRawDFMessage(rawMessage):
             print("processMessage[2]")
             print(processMessage[2])
             print(json.loads(processMessage[2]))
-            # requestInput = json.loads(processMessage[2])
             requestInput = processMessage[2]
             url= os.getenv("HOST_URL")+endPoint
             headers = {
@@ -140,7 +165,6 @@ def processRawDFMessage(rawMessage):
 
         messages.append(processMessage[1])
     return messages
-
 
 
 def detect_intent_texts(agent, text, language_code):
