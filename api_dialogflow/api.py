@@ -157,6 +157,7 @@ def processRawDFMessage(rawMessage):
             }
             response = requests.request("POST", url , headers=headers, data=requestInput)
             print(response)
+            #TODO: wtf is this
             dict1 = json.loads(response.text)
             for key in dict1:
                 token = "{"+key+"}"

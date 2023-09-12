@@ -69,7 +69,6 @@ def get_message_reply():
     url = os.getenv("HOST_URL") + "/runModel"
     response_data = requests.post(url, json=data)
     response = setup_ocbc_api_request(response_data)
-    # Default success response
     print(response.text)
     send_message(response.text, phone_number, client)
     return incoming_message  # Return the response as the HTTP response
@@ -87,13 +86,10 @@ def reply_with_none():
 # ======= MAIN - OCBC API ROUTES =======
 
 
-# OCBC_URL = "https://api.ocbc.com:8243/transactional"
 def setup_ocbc_api_request(response_data):
     '''Sets up the OCBC API request'''
-    endpoint = response_data.get('endpoint')
-    data = response_data.get('data')
 
-    if endpoint == "/accountSummary":
+    def accountSummary():
         #TODO Change to user's account number
         url = Constants.OCBC_URL + "/account/1.0/summary*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
         payload = {}
@@ -101,7 +97,7 @@ def setup_ocbc_api_request(response_data):
         
         return response
     
-    elif endpoint == "/checkBalance":
+    def checkBalance():
         account_number = data.get('accountNumber')
         phone_number = data.get('phoneNumber')
         url = Constants.OCBC_URL + "/accountbalance/1.0/balance*?accountNo=" + account_number
@@ -110,8 +106,9 @@ def setup_ocbc_api_request(response_data):
         
         return response
     
-    elif endpoint == "/balanceEnquiry":
+    def balanceEnquiry():
         url = Constants.OCBC_URL + "/corp/balance/1.0/enquiry"
+        # TODO: Change to user's account number
         payload = {
         "AccountNo": Constants.ACCOUNT_NO,
         "AccountType": Constants.ACCOUNT_TYPE,
@@ -123,7 +120,7 @@ def setup_ocbc_api_request(response_data):
 
         return response
 
-    elif endpoint == "/last6MonthsStatement":
+    def last6MonthsActivity():
         #TODO change to user's account number
         url = Constants.OCBC_URL + "/account/1.0/recentAccountActivity*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
         payload = {}
@@ -131,7 +128,7 @@ def setup_ocbc_api_request(response_data):
 
         return response 
     
-    elif endpoint == "/paynowEnquiry":
+    def paynowEnquiry():
         url = Constants.OCBC_URL + "/paynowenquiry/1.0/payNowEnquiry"
         proxyType = data.get('proxyType')
         proxyValue = data.get('proxyValue')
@@ -147,7 +144,7 @@ def setup_ocbc_api_request(response_data):
         else:
             return False 
 
-    elif endpoint == "/paynow":
+    def paynow():
         #Setup for Enquiry
         amount = data.get('transferAmount')
         phoneNumber = data.get('phoneNumber')
@@ -176,16 +173,34 @@ def setup_ocbc_api_request(response_data):
             approvalMessage = f"Your PayNow request of ${amount} to {proxyValue} is not approved. Please ensure you have entered a valid phone number or NRIC."
         return {"text": approvalMessage}
 
-    elif endpoint == "/unableToFindReply":
+    def unableToFindReply():
         #Default no reply
         phone_number = data.get('phoneNumber')
         send_message('We are unable to find a reply for this.', phone_number, client)
         return 'We are unable to find a reply for this.'
     
-    else:
+    def default_response():
         #Default no endpoint response
         message = response_data.get('message')
         return {"text": message}
+    
+    endpoint = response_data.get('endpoint')
+    data = response_data.get('data')
+
+    switch = {
+        "/accountSummary": accountSummary,
+        "/checkBalance": checkBalance,
+        "/balanceEnquiry": balanceEnquiry,
+        "/last6MonthsActivity": last6MonthsActivity,
+        "/paynowEnquiry": paynowEnquiry,
+        "/paynow": paynow,
+        "/unableToFindReply": unableToFindReply
+    }
+
+    func = switch.get(endpoint, default_response)
+    return func()
+    
+
 
 def send_ocbc_api(url, method, payload, headers=Constants.HEADERS):
     '''Sends a request to the OCBC API'''
