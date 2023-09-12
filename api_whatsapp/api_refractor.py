@@ -3,7 +3,6 @@ import atexit
 import datetime
 import firebase_admin
 import json
-import nlp_model
 import os
 import requests
 import time
@@ -20,7 +19,6 @@ from dotenv import load_dotenv
 
 # Internal imports
 import Constants
-import helperFunctions
 from firestore_api import create_app
 
 # ======= SETUP =======
@@ -181,7 +179,7 @@ def setup_ocbc_api_request(response_data):
     elif endpoint == "/unableToFindReply":
         #Default no reply
         phone_number = data.get('phoneNumber')
-        helperFunctions.send_message('We are unable to find a reply for this.', phone_number, client)
+        send_message('We are unable to find a reply for this.', phone_number, client)
         return 'We are unable to find a reply for this.'
     
     else:
