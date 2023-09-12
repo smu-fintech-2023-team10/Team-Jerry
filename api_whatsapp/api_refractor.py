@@ -85,6 +85,11 @@ def reply_with_none():
 
 # ======= MAIN - OCBC API ROUTES =======
 
+# {
+#     "data": {}
+#     "message": ""
+#     "endpoint": ""
+# }
 
 def setup_ocbc_api_request(response_data):
     '''Sets up the OCBC API request'''
@@ -186,6 +191,7 @@ def setup_ocbc_api_request(response_data):
     
     endpoint = response_data.get('endpoint')
     data = response_data.get('data')
+    message = response_data.get('message')
 
     switch = {
         "/accountSummary": accountSummary,
@@ -198,7 +204,9 @@ def setup_ocbc_api_request(response_data):
     }
 
     func = switch.get(endpoint, default_response)
-    return func()
+    res = func()
+    #format_message
+    return res
     
 
 
@@ -206,7 +214,8 @@ def send_ocbc_api(url, method, payload, headers=Constants.HEADERS):
     '''Sends a request to the OCBC API'''
     data = json.dumps(payload)
     response = requests.request(method, url, headers=headers, data=data)
-    return response
+    return json.loads(response)
+    
 
 
 # ======= HELPER FUNCTIONS =======
@@ -247,6 +256,12 @@ def format_paynow_response(response, amount, proxyValue):
         )
     
     return approval_message
+
+def format_message(message, response):
+    '''Returns the formatted message by replacing variables inside message with variables gotten from endpoints'''
+    #TODO: Fix function
+    return ""
+
 
 def generate_reply(message):
     #TODO: check if still needed
