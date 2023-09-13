@@ -1,25 +1,26 @@
 # External imports
 import atexit
-import datetime
+from datetime import datetime, timedelta
 import firebase_admin
 import json
 import os
 import requests
 import time
 from firebase_admin import credentials, db, firestore
-from flask import Flask, jsonify, request, session
+from flask import Flask, request, Blueprint
 from flask_ngrok import run_with_ngrok
 from flask_session import Session
 from twilio.jwt.access_token import AccessToken
 from twilio.jwt.access_token.grants import ChatGrant
 from twilio.rest import Client
 from twilio.twiml.messaging_response import Message, MessagingResponse
+from apscheduler.schedulers.background import BackgroundScheduler
 from time import sleep
 from dotenv import load_dotenv
 
 # Internal imports
 import Constants
-from firestore_api import create_app
+from api_firestore import create_app, db_reference
 
 # ======= SETUP =======
 
@@ -70,7 +71,7 @@ def get_message_reply():
     response_data = requests.post(url, json=data)
     response = setup_ocbc_api_request(response_data)
     print(response)
-    send_message(response, phone_number, client)
+    send_message(response, sender_phone_number, client)
     return incoming_message  # Return the response as the HTTP response
 
 
@@ -84,7 +85,7 @@ def get_message_reply():
 #     "endpoint": ""
 # }
 
-def setup_ocbc_api_request(response_data):
+def setup_ocbc_api_request(res):
     '''Sets up the OCBC API request'''
 
     def accountSummary():
@@ -128,6 +129,8 @@ def setup_ocbc_api_request(response_data):
     
     def paynowEnquiry():
         url = Constants.OCBC_URL + "/paynowenquiry/1.0/payNowEnquiry"
+        print("THIS")
+        print(data)
         proxyType = data.get('proxyType')
         proxyValue = data.get('proxyValue')
         payload = {
@@ -151,11 +154,13 @@ def setup_ocbc_api_request(response_data):
         accountNumber = data.get('bankAccountNumber')
         nric = data.get('nric') 
         proxyData = getProxy(phoneNumber, nric)
-        setupData = {
+        setupData = json.dumps({
+            "text":{
             "endpoint": "/paynowEnquiry",
             "data": proxyData,
             "message": ""
-        }
+            }
+        })
         #Validated
         if setup_ocbc_api_request(setupData) == "approved":
             url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
@@ -183,7 +188,7 @@ def setup_ocbc_api_request(response_data):
         #Default no endpoint response
         message = response_data.get('message')
         return {"text": message}
-    
+    response_data = json.loads(res.text)
     endpoint = response_data.get('endpoint')
     data = response_data.get('data')
     message = response_data.get('message')
@@ -199,11 +204,11 @@ def setup_ocbc_api_request(response_data):
     }
 
     func = switch.get(endpoint, default_response)
-    res = func()
+    finalRes = func()
     #Check Result
-    print(res)
+    print(finalRes)
     print(message)
-    return format_message(message, res.text)
+    return format_message(message, finalRes)
     
 
 
@@ -285,3 +290,9 @@ def send_message(messageBody, recepientNumber, client):
     )
     print(message.sid)
     return
+
+client = refresh_twilio_auth_token()
+# Set up the scheduler
+scheduler = BackgroundScheduler()
+scheduler.add_job(refresh_twilio_auth_token, 'interval', hours=20)
+scheduler.start()
