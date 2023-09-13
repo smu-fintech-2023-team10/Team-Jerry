@@ -5,6 +5,7 @@ from dash import dcc
 import plotly.express as px
 import pandas as pd
 from dash.dependencies import Input, Output
+from ..sentiment_analysis.sentiment_analysis import msgs_sentiment
 
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -100,9 +101,10 @@ def render_page_content(pathname="/scan-to-pay", metric_choice="Users"):
     
     elif pathname == "/paynow-transfer":
 
-        return [
+        paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
+        fig = get_fig(paynow_transfer_df, metric_choice)
 
-                ]
+        return "Paynow Transfer", fig
     
     elif pathname == "/scan-to-pay":
 

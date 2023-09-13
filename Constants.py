@@ -1,3 +1,0 @@
-HOST_URL = "http://localhost:5000"
-ACCOUNT_NO = "201770161001"
-ACCOUNT_TYPE = "D"

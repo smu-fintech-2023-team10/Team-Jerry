@@ -21,3 +21,6 @@ flask_session
 google-auth 
 google-auth-oauthlib 
 google-auth-httplib2
+transformers==4.33.1
+pandas==1.1.5
+regex=2022.3.15
