@@ -6,7 +6,9 @@ import plotly.express as px
 import pandas as pd
 from dash.dependencies import Input, Output
 
+
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+
 
 SIDEBAR_STYLE = {
     "position": "fixed",
@@ -23,6 +25,7 @@ CONTENT_STYLE = {
     "marginRight": "2rem",
     "padding": "2rem 1rem",
 }
+
 
 sidebar = html.Div(
     [   
@@ -48,12 +51,13 @@ content = html.Div(id="page-content", children=[
         html.H1(id='business-function-name', children="", style={'textAlign':'center', "color":"#081A51"}),
         dcc.Dropdown(id='metric-choice',
                     options=[{"label":x, "value":x} for x in ["Users", "Sessions"]],
-                    value="Action"
+                    value="Users"
                     ),
         dcc.Graph(id="my-graph",
                 figure={}
                 ),
 ], style=CONTENT_STYLE)
+
 
 app.layout = html.Div(
     children=[
@@ -62,12 +66,28 @@ app.layout = html.Div(
     content
 ])
 
+
 @app.callback(
     [Output(component_id='business-function-name', component_property="children"), Output(component_id='my-graph', component_property='figure')],
     [Input("url", "pathname"), Input(component_id='metric-choice', component_property='value')]
     
 )
 def render_page_content(pathname="/scan-to-pay", metric_choice="Users"):
+
+    def get_fig(df, metric_choice):
+        df['date'] = pd.to_datetime(df['date'], format="%d/%m/%y")
+        sorted_df = df.sort_values(by="date")
+        
+        if metric_choice == "Users":
+            users_df = sorted_df.groupby(["date"])['account_number'].nunique().reset_index(name="user count")
+            fig = px.line(users_df, x="date", y="user count", title="Number of Users Over Time")
+        
+        elif metric_choice == "Sessions":
+            sessions_df = sorted_df.groupby(["date"]).size().reset_index(name="session count")
+            fig = px.line(sessions_df, x="date", y="session count", title="Number of Sessions Over Time")
+        
+        return fig
+
     if pathname == "/overview":
         return [
 
@@ -79,27 +99,17 @@ def render_page_content(pathname="/scan-to-pay", metric_choice="Users"):
                 ]
     
     elif pathname == "/paynow-transfer":
+
         return [
 
                 ]
     
     elif pathname == "/scan-to-pay":
 
-        scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv') #convert scan to pay csv into a pandas dataframe
-        scan_to_pay_df['date'] = pd.to_datetime(scan_to_pay_df['date'], format="%d/%m/%y") #change date to a datetime column
-        sorted_scan_to_pay = scan_to_pay_df.sort_values(by="date") #sort by date so can plot in chronological order
+        scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
+        fig = get_fig(scan_to_pay_df, metric_choice)
 
-        if metric_choice == "Users":
-            users_df = sorted_scan_to_pay.groupby(["date"])['account_number'].nunique().reset_index(name="user count") #to get no. of unique users over time groupby date
-            user_fig = px.line(users_df, x="date", y="user count", title="Number of Users Over Time"),
-            fig = user_fig
-
-        if metric_choice == "Sessions":
-            sessions_df = sorted_scan_to_pay.groupby(["date"]).size().reset_index(name="session count"),
-            session_fig = px.line(sessions_df, x="date", y="session count", title="Number of Sessions Over Time"),
-            fig = session_fig
-
-        return "Scan to Pay", fig[0]
+        return "Scan to Pay", fig
 
     return dbc.Jumbotron(
         [
@@ -108,6 +118,7 @@ def render_page_content(pathname="/scan-to-pay", metric_choice="Users"):
             html.P(f"The pathname {pathname} was not recognised..."),
         ]
     )
+
 
 if __name__=='__main__':
     app.run_server(debug=True, port=3200)
