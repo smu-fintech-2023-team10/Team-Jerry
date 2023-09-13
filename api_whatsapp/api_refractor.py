@@ -69,16 +69,9 @@ def get_message_reply():
     url = os.getenv("HOST_URL") + "/runModel"
     response_data = requests.post(url, json=data)
     response = setup_ocbc_api_request(response_data)
-    print(response.text)
-    send_message(response.text, phone_number, client)
+    print(response)
+    send_message(response, phone_number, client)
     return incoming_message  # Return the response as the HTTP response
-
-@whatsappMS.route("/unableToFindReply", methods=['POST'])
-def reply_with_none():
-    data = request.json
-    phone_number = data.get('phoneNumber')  # Extract phone number from the JSON data
-    send_message('We are unable to find a reply for this.', phone_number, client)
-    return 'We are unable to find a reply for this.'
 
 
 # ======= END ROUTES =======
@@ -145,9 +138,11 @@ def setup_ocbc_api_request(response_data):
 
         resBody = json.loads(response.text)
         if resBody["Success"] == True:
-            return True 
+            return {"text" : "approved",
+                    "message" : "approved"} 
         else:
-            return False 
+            return {"text" : "not approved",
+                    "message" : "approved"}
 
     def paynow():
         #Setup for Enquiry
@@ -162,7 +157,7 @@ def setup_ocbc_api_request(response_data):
             "message": ""
         }
         #Validated
-        if setup_ocbc_api_request(setupData) :
+        if setup_ocbc_api_request(setupData) == "approved":
             url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
             payload = {
             "Amount": amount,
@@ -172,11 +167,11 @@ def setup_ocbc_api_request(response_data):
             }
             response = send_ocbc_api(url, "POST", payload)
 
-            approvalMessage = format_paynow_response(response)
+            approvalMessage = format_paynow_response(response, amount, proxyData["proxyValue"])
         #Not Valid
         else:
-            approvalMessage = f"Your PayNow request of ${amount} to {proxyValue} is not approved. Please ensure you have entered a valid phone number or NRIC."
-        return {"text": approvalMessage}
+            approvalMessage = f"Your PayNow request of ${amount} to {proxyData['proxyValue']} is not approved. Please ensure you have entered a valid phone number or NRIC."
+        return { "text" :    {"approvalMessage": approvalMessage} }
 
     def unableToFindReply():
         #Default no reply
@@ -205,8 +200,10 @@ def setup_ocbc_api_request(response_data):
 
     func = switch.get(endpoint, default_response)
     res = func()
-    #format_message
-    return res
+    #Check Result
+    print(res)
+    print(message)
+    return format_message(message, res.text)
     
 
 
@@ -237,7 +234,7 @@ def getProxy(phoneNumber, nric):
 
 def format_paynow_response(response, amount, proxyValue):
     '''Returns the approval message for PayNow'''
-    response_data = json.loads(response.text)
+    response_data = response.text
     if response_data["Success"]:
         transaction_time = response_data["Results"]["TransactionTime"]
         transaction_date = response_data["Results"]["TransactionDate"]
@@ -259,8 +256,13 @@ def format_paynow_response(response, amount, proxyValue):
 
 def format_message(message, response):
     '''Returns the formatted message by replacing variables inside message with variables gotten from endpoints'''
-    #TODO: Fix function
-    return ""
+    if message.find("{") != -1:
+        return message 
+    else:
+        for key in response:
+            token = "{"+key+"}"
+            message = message.replace(token,response[key])
+        return message
 
 
 def generate_reply(message):
