@@ -1,32 +1,38 @@
 # External imports
+import atexit
+from datetime import datetime, timedelta
+import firebase_admin
+import json
+import os
 import requests
 import time
-from twilio.rest import Client
-from twilio.twiml.messaging_response import Message, MessagingResponse
-from flask_ngrok import run_with_ngrok
-from datetime import datetime, timedelta
+from firebase_admin import credentials, db, firestore
 from flask import Flask, request, Blueprint
-from apscheduler.schedulers.background import BackgroundScheduler
-from time import sleep
-import os
+from flask_ngrok import run_with_ngrok
+from flask_session import Session
 from twilio.jwt.access_token import AccessToken
 from twilio.jwt.access_token.grants import ChatGrant
+from twilio.rest import Client
+from twilio.twiml.messaging_response import Message, MessagingResponse
+from apscheduler.schedulers.background import BackgroundScheduler
+from time import sleep
 from dotenv import load_dotenv
-
 
 # Internal imports
 import Constants
-import json
-import nlp_model
-import helperFunctions
 from api_firestore import create_app, db_reference
-from api_firestore.api import get_token_refresh_time
-# Load the environment variables from .env file
 
-whatsappMS = Blueprint('whatsappMS', __name__)
+# ======= SETUP =======
+
 load_dotenv()
 root_ref = db_reference
+whatsappMS = Blueprint('whatsappMS', __name__)
 
+# ======= END SETUP =======
+
+# ======= ROUTES =======
+
+# Test Route
 def refresh_twilio_auth_token():
     # Get a reference to the specific user node using the provided user_id
     token = root_ref.child('auth_token').child('token').get()
@@ -34,6 +40,7 @@ def refresh_twilio_auth_token():
     print("start")
     account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
     auth_token = token
+    print(auth_token)
     client = Client(account_sid, auth_token)
     auth_token_promotion = client.accounts.v1.auth_token_promotion().update()
     new_primary_auth_token = auth_token_promotion.auth_token
@@ -42,7 +49,6 @@ def refresh_twilio_auth_token():
     secondary_auth_token = client.accounts.v1.secondary_auth_token().create()
     new_secondary_auth_token = secondary_auth_token.secondary_auth_token
 
-   
     auth_token_ref = root_ref.child('auth_token')
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
     auth_token_ref.update({
@@ -53,200 +59,241 @@ def refresh_twilio_auth_token():
     print("Token Updated")
     return client
 
-
-
-@whatsappMS.route("/sendMessageTest", methods=['POST'])
-def sendMessageTest():
-
-    return "True"
-
 @whatsappMS.route("/getReply", methods=['POST'])
 def get_message_reply():
     incoming_message = request.form['Body']  # Extract the incoming message content
     sender_phone_number = request.form['From'] # Extract the phone number
-    print(incoming_message)
-    print(sender_phone_number)
     data = {
         "message": incoming_message,
         "userId": sender_phone_number
     }
     url = os.getenv("HOST_URL") + "/runModel"
-    res = requests.post(url, json=data)
-    helperFunctions.send_message("\n".join(json.loads(res.text)), sender_phone_number, client)
-    print(str(res))
+    response_data = requests.post(url, json=data)
+    print(response_data)
+    response = setup_ocbc_api_request(response_data)
+    send_message(response, sender_phone_number, client)
     return incoming_message  # Return the response as the HTTP response
+
+
+# ======= END ROUTES =======
+
+# ======= MAIN - OCBC API ROUTES =======
+
+# {
+#     "data": {}
+#     "message": ""
+#     "endpoint": ""
+# }
+
+def setup_ocbc_api_request(res):
+    '''Sets up the OCBC API request'''
+
+    def accountSummary():
+        #TODO Change to user's account number
+        url = Constants.OCBC_URL + "/account/1.0/summary*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
+        payload = {}
+        response = send_ocbc_api(url, "GET", payload)
+        
+        return response
     
-@whatsappMS.route("/unableToFindReply", methods=['POST'])
-def reply_with_none():
-    data = request.json
-    phone_number = data.get('phoneNumber')  # Extract phone number from the JSON data
-    helperFunctions.send_message('We are unable to find a reply for this.', phone_number, client)
-    return 'We are unable to find a reply for this.'
+    def checkBalance():
+        payloadData = json.loads(data)
+        account_number = payloadData.get('accountNumber')
+        phone_number = payloadData.get('phoneNumber')
+        url = Constants.OCBC_URL + "/accountbalance/1.0/balance*?accountNo=" + account_number
+        payload = {}    
+        response = send_ocbc_api(url, "GET", payload)
+        CurrencyCode= response['Results']['CurrencyCode']
+        AvailableBalance= response['Results']['AvailableBalance']
+        BalanceAsOfDate= response['Results']['BalanceAsOfDate']
+        resString = f'{CurrencyCode} {AvailableBalance}, as of : {BalanceAsOfDate}'
+        # helperFunctions.send_message(response.text, phone_number, client)
+        return {"balance": resString}
+    
+    def balanceEnquiry():
+        url = Constants.OCBC_URL + "/corp/balance/1.0/enquiry"
+        # TODO: Change to user's account number
+        payload = {
+        "AccountNo": Constants.ACCOUNT_NO,
+        "AccountType": Constants.ACCOUNT_TYPE,
+        "AccountCurrency": "SGD",
+        "AccountBIC": "OCBCSGSGXXX",
+        "TimeDepositNo": "129"
+        }
+        response = send_ocbc_api(url, "POST", payload)
+        return response
 
+    def last6MonthsActivity():
+        #TODO change to user's account number
+        url = Constants.OCBC_URL + "/account/1.0/recentAccountActivity*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
+        payload = {}
+        response = send_ocbc_api(url, "GET", payload)
 
-# OCBC APIs
-@whatsappMS.route("/accountSummary", methods=['POST'])
-def account_summary():
-    url = "https://api.ocbc.com:8243/transactional/account/1.0/summary*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
-    payload={}
-    headers = {
-    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
-    }
-
-    response = requests.request("GET", url, headers=headers, data=payload)
-
-    print(response.text)
-    return response.text
-
-
-@whatsappMS.route("/checkBalance" , methods=['POST'])
-def get_account_balance():
-    data = request.json  # Get the JSON data from the request body
-    account_number = data.get('accountNumber')  # Extract account number from the JSON data
-    phone_number = data.get('phoneNumber')  # Extract phone number from the JSON data
-    url = "https://api.ocbc.com:8243/transactional/accountbalance/1.0/balance*?accountNo=" + account_number
-    payload={}
-    headers = {
-    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN")
-    }
-    response = requests.request("GET", url, headers=headers, data=payload)
-    print(response.text)
-    resBody = json.loads(response.text)
-    print(resBody)
-    CurrencyCode= resBody['Results']['CurrencyCode']
-    AvailableBalance= resBody['Results']['AvailableBalance']
-    BalanceAsOfDate= resBody['Results']['BalanceAsOfDate']
-    resString = f'{CurrencyCode} {AvailableBalance}, as of : {BalanceAsOfDate}'
-    # helperFunctions.send_message(response.text, phone_number, client)
-    return {"balance": resString}
-
-@whatsappMS.route("/balanceEnquiry", methods=['POST'])
-def balance_enquiry():
-
-    url = "https://api.ocbc.com:8243/transactional/corp/balance/1.0/enquiry"
-
-    payload = json.dumps({
-    "AccountNo": Constants.ACCOUNT_NO,
-    "AccountType": Constants.ACCOUNT_TYPE,
-    "AccountCurrency": "SGD",
-    "AccountBIC": "OCBCSGSGXXX",
-    "TimeDepositNo": "129"
-    })
-    headers = {
-    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
-    'Content-Type': 'application/json'
-    }
-
-    response = requests.request("POST", url, headers=headers, data=payload)
-
-    print(response.text)
-    return response.text
-
-@whatsappMS.route("/paynow", methods=['POST'])
-def transfer_money():
-    try:
-        data = request.json
-        amount = data.get("transferAmount")
-        phoneNumber = data.get("phoneNumber")
-        accountNum =  data.get("bankAccountNumber")
-        nric = data.get("nric")
-        if phoneNumber != "0":
-            ProxyType = "MSISDN"
+        return response 
+    
+    def paynowEnquiry():
+        url = Constants.OCBC_URL + "/paynowenquiry/1.0/payNowEnquiry"
+        proxyData = json.loads(data)
+        proxyType = proxyData.get('ProxyType')
+        proxyValue = proxyData.get('ProxyValue')
+        payload = {
+        "ProxyType": proxyType,
+        "ProxyValue": proxyValue
+        }
+        response = send_ocbc_api(url, "POST", payload)
+        if response["Success"] == True:
+            return {"isValid": "valid"}
         else:
-            ProxyType = "NRIC"
+            return {"isValid": "invalid"}
 
-        if ProxyType == "MSISDN":
-            proxyValue = phoneNumber
-        else:
-            proxyValue =  nric
-        payNowEnquiryData  = json.dumps({
-            "ProxyType": ProxyType,
-            "ProxyValue": proxyValue
-        })
-        payNowEnquiryHeaders = {
-                    'Content-Type': 'application/json',  # Example header
-                    # Add more headers as needed
-                }
-        payNowEnquiryResponse = requests.request("POST", os.getenv("HOST_URL")+"/paynowEnquiry" , headers=payNowEnquiryHeaders, data=payNowEnquiryData)
-        payNowEnquiryResponseBody = json.loads(payNowEnquiryResponse.text)
-        if payNowEnquiryResponseBody["isValid"] == "valid":
-            url = "https://api.ocbc.com:8243/transactional/paynow/1.0/sendPayNowMoney"
-            #{"phoneNumber": "$session.params.phone_number", "bankAccountNumber": "$session.params.bank_acc_number",,"nric": "$session.params.nric","transferAmount": "$intent.params.transfer_amount"}
-            payload = json.dumps({
+    def paynow():
+        #Setup for Enquiry
+        payloadData = json.loads(data)
+        amount = payloadData.get('transferAmount')
+        phoneNumber = payloadData.get('phoneNumber')
+        accountNumber = payloadData.get('bankAccountNumber')
+        nric = payloadData.get('nric') 
+        proxyData = getProxy(phoneNumber, nric)
+        setupData = {
+            "endpoint": "/paynowEnquiry",
+            "data": json.dumps(proxyData),
+            "message": "{isValid}"
+        }
+        #Validated
+        paynowEnquire = setup_ocbc_api_request(setupData)
+        if paynowEnquire == "valid":
+            url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
+            payload = {
             "Amount": amount,
-            "ProxyType": ProxyType,
-            "ProxyValue": proxyValue,
-            "FromAccountNo": accountNum
-            })
-            headers = {
-            'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
-            'Content-Type': 'application/json'
+            "ProxyType": proxyData["ProxyType"],
+            "ProxyValue": proxyData["ProxyValue"],
+            "FromAccountNo": accountNumber
             }
+            response = send_ocbc_api(url, "POST", payload)
 
-            response = requests.request("POST", url, headers=headers, data=payload)
-            resBody = json.loads(response.text)
-            print(resBody)
-            if resBody["Success"] == True:
-                transationTime = resBody["Results"]["TransactionTime"]
-                transationDate = resBody["Results"]["TransactionDate"]
-                availableBalance = resBody["Results"]["AvailableBalance"]
-                approvalMessage = f"Your PayNow request of ${amount} to {proxyValue} is successful.\nTransaction Time: {transationTime} \nTransaction Date: {transationDate}\nAvailable Balance: {availableBalance}"
-                return {"approvalMessage": approvalMessage}
-            else:
-                errorMsg = resBody["Results"]["ErrorMsg"]
-                approvalMessage = f"Your PayNow request of ${amount} to {proxyValue} is not approved.\n{errorMsg}"
-                return {"approvalMessage": approvalMessage}
+            approvalMessage = format_paynow_response(response, amount, proxyData["ProxyValue"])
+        #Not Valid
         else:
-            approvalMessage = f"Your PayNow request of ${amount} to {proxyValue} is not approved. Please ensure you have entered a valid phone number or NRIC."
-            return {"approvalMessage": approvalMessage}
-    except Exception as e:
-        return e
+            approvalMessage = f"Your PayNow request of ${amount} to {proxyData['ProxyValue']} is not approved. Please ensure you have entered a valid phone number or NRIC."
+        return {"approvalMessage": approvalMessage}
 
-@whatsappMS.route("/paynowEnquiry", methods=['POST'])
-def paynow_enquiry():
-    data = request.json
-    proxyType = data.get("ProxyType")
-    proxyValue = data.get("ProxyValue")
-    url = "https://api.ocbc.com:8243/transactional/paynowenquiry/1.0/payNowEnquiry"
-
-    payload = json.dumps({
-    "ProxyType": proxyType, #OR NRIC
-    "ProxyValue": proxyValue #OR S9801118H
-    })    
-    headers = {
-    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN"),
-    'Content-Type': 'application/json'
-    }
-
-    response = requests.request("POST", url, headers=headers, data=payload)
-    resBody = json.loads(response.text)
-    print(resBody["Success"])
-    if resBody["Success"] == True:
-        return {"isValid": "valid"}
+    def unableToFindReply():
+        #Default no reply
+        phone_number = data.get('phoneNumber')
+        send_message('We are unable to find a reply for this.', phone_number, client)
+        return 'We are unable to find a reply for this.'
+    
+    def default_response():
+        #Default no endpoint response
+        message = response_data.get('message')
+        return {"text": message}
+    
+    if isinstance(res, requests.Response):
+        response_data = json.loads(res.text)
     else:
-        return {"isValid": "invalid"}
+        response_data = res
+    print(response_data)
+    endpoint = response_data.get('endpoint')
+    data = response_data.get('data')
+    message = response_data.get('message')
 
-
-@whatsappMS.route("/last6MonthsStatement", methods=['POST'])
-def last_6month_statement():
-    url = "https://api.ocbc.com:8243/transactional/account/1.0/recentAccountActivity*?accountNo="+Constants.ACCOUNT_NO+"&accountType=" +Constants.ACCOUNT_TYPE
-
-    payload={}
-    headers = {
-    'Authorization': 'Bearer ' + os.environ.get("ACCESS_TOKEN")
+    switch = {
+        "/accountSummary": accountSummary,
+        "/checkBalance": checkBalance,
+        "/balanceEnquiry": balanceEnquiry,
+        "/last6MonthsActivity": last6MonthsActivity,
+        "/paynowEnquiry": paynowEnquiry,
+        "/paynow": paynow,
+        "/unableToFindReply": unableToFindReply
     }
 
-    response = requests.request("GET", url, headers=headers, data=payload)
+    func = switch.get(endpoint, default_response)
+    finalRes = func()
+    return format_message(message, finalRes)
+    
 
-    print(response.text)
-    return response.text
+
+def send_ocbc_api(url, method, payload, headers=Constants.HEADERS):
+    '''Sends a request to the OCBC API'''
+    data = json.dumps(payload)
+    response = requests.request(method, url, headers=headers, data=data)
+    return json.loads(response.text)
+    
 
 
-# if __name__ == '__main__':
+# ======= HELPER FUNCTIONS =======
+
+def getProxy(phoneNumber, nric):
+    '''Returns the proxy type and value for PayNow'''
+    if phoneNumber != "0":
+        proxyType = "MSISDN"
+        proxyValue = phoneNumber
+    else:
+        proxyType = "NRIC"
+        proxyValue = nric
+
+
+    return {
+        "ProxyType": proxyType,
+        "ProxyValue": proxyValue
+    }
+
+def format_paynow_response(response, amount, proxyValue):
+    '''Returns the approval message for PayNow'''
+    response_data = response
+    if response_data["Success"]:
+        transaction_time = response_data["Results"]["TransactionTime"]
+        transaction_date = response_data["Results"]["TransactionDate"]
+        available_balance = response_data["Results"]["AvailableBalance"]
+        approval_message = (
+            f"Your PayNow request of ${amount} to {proxyValue} is successful.\n"
+            f"Transaction Time: {transaction_time}\n"
+            f"Transaction Date: {transaction_date}\n"
+            f"Available Balance: {available_balance}"
+        )
+    else:
+        error_msg = response_data["Results"]["ErrorMsg"]
+        approval_message = (
+            f"Your PayNow request of ${amount} to {proxyValue} is not approved.\n"
+            f"{error_msg}"
+        )
+    
+    return approval_message
+
+def format_message(message, response):
+    '''Returns the formatted message by replacing variables inside message with variables gotten from endpoints'''
+    if '{' not in message:
+        return message 
+    else:
+        for key in response:
+            token = "{"+key+"}"
+            message = message.replace(token,response[key])
+        return message
+
+
+def generate_reply(message):
+    #TODO: check if still needed
+    '''Returns the endpoint based on user's message'''
+    #dictionary for routes (key: message, value: endpoint)
+    routes = {
+        "Check my balance": "/checkBalance",
+    }
+    
+    return routes.get(message, "/unableToFindReply")
+
+
+def send_message(messageBody, recepientNumber, client):
+    '''Sends a message to the user'''
+    message = client.messages.create(
+    from_='whatsapp:+14155238886',
+    body=messageBody,
+    to=recepientNumber
+    )
+    print(message.sid)
+    return
+
 client = refresh_twilio_auth_token()
 # Set up the scheduler
 scheduler = BackgroundScheduler()
 scheduler.add_job(refresh_twilio_auth_token, 'interval', hours=20)
 scheduler.start()
-    # whatsappMS.run()  # adjust host and port as needed
-

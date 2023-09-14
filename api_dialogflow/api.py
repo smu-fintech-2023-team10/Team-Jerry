@@ -120,11 +120,12 @@ def refractor_processRawDFMessage(raw_message):
         "endpoint": "",
         "data": ""
     }
-    
+    idx = 0
     for message_data in raw_message:
         message = message_data['text']['text'][0]
         process_message = message.split('-')
-        
+        if idx > 0:
+            response_data["message"] += "\n\n"
         if process_message[0] != '' and process_message[0][0] == '/':
             endpoint = process_message[0]
             message_var = process_message[1]
@@ -132,12 +133,12 @@ def refractor_processRawDFMessage(raw_message):
             
             response_data["endpoint"] = endpoint
             response_data["data"] = request_input
-            response_data["message"] = message_var
+            response_data["message"] += message_var
         else:
             print("#THIS")
             print(process_message)
-            response_data["message"] = process_message[1]
-    
+            response_data["message"] += process_message[1]
+        idx+=1
     return response_data
 
 #The dialogflow response should follow this format:
