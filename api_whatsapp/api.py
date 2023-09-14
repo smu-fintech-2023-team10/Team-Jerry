@@ -17,6 +17,8 @@ from twilio.twiml.messaging_response import Message, MessagingResponse
 from apscheduler.schedulers.background import BackgroundScheduler
 from time import sleep
 from dotenv import load_dotenv
+from .components.qrDecoder import decode_paynow_qr
+from .components.parseQrImageToString import parseQrToString
 
 # Internal imports
 import Constants
@@ -37,18 +39,15 @@ def refresh_twilio_auth_token():
     # Get a reference to the specific user node using the provided user_id
     token = root_ref.child('auth_token').child('token').get()
     # Shut down the scheduler when exiting the app
-    print("start")
+    print("Starting... Refreshing Twilio Token... DO NOT CANCEL YET")
     account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
     auth_token = token
-    print(auth_token)
     client = Client(account_sid, auth_token)
     auth_token_promotion = client.accounts.v1.auth_token_promotion().update()
     new_primary_auth_token = auth_token_promotion.auth_token
-    client = Client(account_sid, new_primary_auth_token)
-    print(client)
     secondary_auth_token = client.accounts.v1.secondary_auth_token().create()
     new_secondary_auth_token = secondary_auth_token.secondary_auth_token
-
+    client = Client(account_sid, new_primary_auth_token)
     auth_token_ref = root_ref.child('auth_token')
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
     auth_token_ref.update({
@@ -56,24 +55,48 @@ def refresh_twilio_auth_token():
         'token': new_primary_auth_token,
         'time': current_time
     })
-    print("Token Updated")
+    print("Token Updated... Now can cancel if you want")
     return client
 
 @whatsappMS.route("/getReply", methods=['POST'])
 def get_message_reply():
-    incoming_message = request.form['Body']  # Extract the incoming message content
-    sender_phone_number = request.form['From'] # Extract the phone number
-    data = {
-        "message": incoming_message,
-        "userId": sender_phone_number
-    }
-    url = os.getenv("HOST_URL") + "/runModel"
-    response_data = requests.post(url, json=data)
-    print(response_data)
-    response = setup_ocbc_api_request(response_data)
-    send_message(response, sender_phone_number, client)
-    return incoming_message  # Return the response as the HTTP response
-
+    # incoming_message = request.form['Body']  # Extract the incoming message content
+    sender_phone_number = request.form.get('From')
+    incoming_message = request.form.get('Body')
+    media_url = request.form.get('MediaUrl0')
+    if media_url != None:
+        print('media_url')
+        print(media_url)
+        qrStringObj = parseQrToString(media_url)
+        print(qrStringObj)
+        if(qrStringObj['success'] == True):
+            qrString = qrStringObj['qrString']
+            decoded = decode_paynow_qr(qrString) #QR object with payment info
+            # {
+            # 'Payload Format Indicator': '01', 
+            # 'Point of Initiation Method': '11', 
+            # 'Merchant Account Information': {'Reverse Domain Name': 'SG.PAYNOW', 'Proxy Type': 'MSIDN', 'Proxy Value': '+6597988922', 'Editable': '1'}, 
+            # 'Merchant Category Code': '0000', 
+            # 'Transaction Currency': '702', 
+            # 'Country Code': 'SG', 
+            # 'Merchant Name': 'NA',
+            # 'Merchant City': 'SINGAPORE', 
+            # 'CRC': '7F54'
+            # }
+            print(decoded["Merchant Account Information"]) #{'Reverse Domain Name': 'SG.PAYNOW', 'Proxy Type': 'MSIDN', 'Proxy Value': '+6597988922', 'Editable': '1'}
+        else:
+            print("This is not a QR Code")
+    else:
+        data = {
+            "message": incoming_message,
+            "userId": sender_phone_number
+        }
+        url = os.getenv("HOST_URL") + "/runModel"
+        response_data = requests.post(url, json=data)
+        print(response_data)
+        response = setup_ocbc_api_request(response_data)
+        send_message(response, sender_phone_number, client)
+    return "Success"
 
 # ======= END ROUTES =======
 
@@ -291,6 +314,8 @@ def send_message(messageBody, recepientNumber, client):
     )
     print(message.sid)
     return
+
+
 
 client = refresh_twilio_auth_token()
 # Set up the scheduler
