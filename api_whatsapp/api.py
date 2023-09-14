@@ -95,6 +95,17 @@ def get_message_reply():
         response_data = requests.post(url, json=data)
         print(response_data)
         response = setup_ocbc_api_request(response_data)
+
+
+        ##send to FB ##CONTINUE FROM HERE
+        log = {'userID': sender_phone_number,
+               'userMsg': incoming_message,
+               'intent': json.loads(response_data.text)['intent'],
+               'reponse':response}
+        
+        print(log)
+
+
         send_message(response, sender_phone_number, client)
     return "Success"
 
@@ -215,7 +226,7 @@ def setup_ocbc_api_request(res):
         response_data = json.loads(res.text)
     else:
         response_data = res
-    print(response_data)
+    # print(response_data)
     endpoint = response_data.get('endpoint')
     data = response_data.get('data')
     message = response_data.get('message')
@@ -232,6 +243,7 @@ def setup_ocbc_api_request(res):
 
     func = switch.get(endpoint, default_response)
     finalRes = func()
+
     return format_message(message, finalRes)
     
 
@@ -312,7 +324,7 @@ def send_message(messageBody, recepientNumber, client):
     body=messageBody,
     to=recepientNumber
     )
-    print(message.sid)
+    # print(message.sid)
     return
 
 
