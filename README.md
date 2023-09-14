@@ -5,6 +5,7 @@
 #Install dependencies
 pip install -r requirements.txt
 pip install firebase-admin --user
+pip install flask_session --user
 #Run
 python main.py
 
