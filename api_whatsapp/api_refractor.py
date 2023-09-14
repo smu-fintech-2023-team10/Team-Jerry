@@ -40,6 +40,7 @@ def refresh_twilio_auth_token():
     print("start")
     account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
     auth_token = token
+    print(auth_token)
     client = Client(account_sid, auth_token)
     auth_token_promotion = client.accounts.v1.auth_token_promotion().update()
     new_primary_auth_token = auth_token_promotion.auth_token
@@ -48,7 +49,6 @@ def refresh_twilio_auth_token():
     secondary_auth_token = client.accounts.v1.secondary_auth_token().create()
     new_secondary_auth_token = secondary_auth_token.secondary_auth_token
 
-   
     auth_token_ref = root_ref.child('auth_token')
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
     auth_token_ref.update({
@@ -70,7 +70,6 @@ def get_message_reply():
     url = os.getenv("HOST_URL") + "/runModel"
     response_data = requests.post(url, json=data)
     response = setup_ocbc_api_request(response_data)
-    print(response)
     send_message(response, sender_phone_number, client)
     return incoming_message  # Return the response as the HTTP response
 
@@ -129,54 +128,49 @@ def setup_ocbc_api_request(res):
     
     def paynowEnquiry():
         url = Constants.OCBC_URL + "/paynowenquiry/1.0/payNowEnquiry"
-        print("THIS")
-        print(data)
-        proxyType = data.get('proxyType')
-        proxyValue = data.get('proxyValue')
+        proxyData = json.loads(data)
+        proxyType = proxyData.get('ProxyType')
+        proxyValue = proxyData.get('ProxyValue')
         payload = {
         "ProxyType": proxyType,
         "ProxyValue": proxyValue
         }
         response = send_ocbc_api(url, "POST", payload)
-
-        resBody = json.loads(response.text)
-        if resBody["Success"] == True:
-            return {"text" : "approved",
-                    "message" : "approved"} 
+        if response["Success"] == True:
+            return {"isValid": "valid"}
         else:
-            return {"text" : "not approved",
-                    "message" : "approved"}
+            return {"isValid": "invalid"}
 
     def paynow():
         #Setup for Enquiry
-        amount = data.get('transferAmount')
-        phoneNumber = data.get('phoneNumber')
-        accountNumber = data.get('bankAccountNumber')
-        nric = data.get('nric') 
+        payloadData = json.loads(data)
+        amount = payloadData.get('transferAmount')
+        phoneNumber = payloadData.get('phoneNumber')
+        accountNumber = payloadData.get('bankAccountNumber')
+        nric = payloadData.get('nric') 
         proxyData = getProxy(phoneNumber, nric)
-        setupData = json.dumps({
-            "text":{
+        setupData = {
             "endpoint": "/paynowEnquiry",
-            "data": proxyData,
-            "message": ""
-            }
-        })
+            "data": json.dumps(proxyData),
+            "message": "{isValid}"
+        }
         #Validated
-        if setup_ocbc_api_request(setupData) == "approved":
+        paynowEnquire = setup_ocbc_api_request(setupData)
+        if paynowEnquire == "valid":
             url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
             payload = {
             "Amount": amount,
-            "ProxyType": proxyData["proxyType"],
-            "ProxyValue": proxyData["proxyValue"],
+            "ProxyType": proxyData["ProxyType"],
+            "ProxyValue": proxyData["ProxyValue"],
             "FromAccountNo": accountNumber
             }
             response = send_ocbc_api(url, "POST", payload)
 
-            approvalMessage = format_paynow_response(response, amount, proxyData["proxyValue"])
+            approvalMessage = format_paynow_response(response, amount, proxyData["ProxyValue"])
         #Not Valid
         else:
-            approvalMessage = f"Your PayNow request of ${amount} to {proxyData['proxyValue']} is not approved. Please ensure you have entered a valid phone number or NRIC."
-        return { "text" :    {"approvalMessage": approvalMessage} }
+            approvalMessage = f"Your PayNow request of ${amount} to {proxyData['ProxyValue']} is not approved. Please ensure you have entered a valid phone number or NRIC."
+        return {"approvalMessage": approvalMessage}
 
     def unableToFindReply():
         #Default no reply
@@ -188,7 +182,12 @@ def setup_ocbc_api_request(res):
         #Default no endpoint response
         message = response_data.get('message')
         return {"text": message}
-    response_data = json.loads(res.text)
+    
+    if isinstance(res, requests.Response):
+        response_data = json.loads(res.text)
+    else:
+        response_data = res
+
     endpoint = response_data.get('endpoint')
     data = response_data.get('data')
     message = response_data.get('message')
@@ -205,9 +204,6 @@ def setup_ocbc_api_request(res):
 
     func = switch.get(endpoint, default_response)
     finalRes = func()
-    #Check Result
-    print(finalRes)
-    print(message)
     return format_message(message, finalRes)
     
 
@@ -216,7 +212,7 @@ def send_ocbc_api(url, method, payload, headers=Constants.HEADERS):
     '''Sends a request to the OCBC API'''
     data = json.dumps(payload)
     response = requests.request(method, url, headers=headers, data=data)
-    return json.loads(response)
+    return json.loads(response.text)
     
 
 
@@ -233,13 +229,13 @@ def getProxy(phoneNumber, nric):
 
 
     return {
-        "proxyType": proxyType,
-        "proxyValue": proxyValue
+        "ProxyType": proxyType,
+        "ProxyValue": proxyValue
     }
 
 def format_paynow_response(response, amount, proxyValue):
     '''Returns the approval message for PayNow'''
-    response_data = response.text
+    response_data = response
     if response_data["Success"]:
         transaction_time = response_data["Results"]["TransactionTime"]
         transaction_date = response_data["Results"]["TransactionDate"]
@@ -261,7 +257,7 @@ def format_paynow_response(response, amount, proxyValue):
 
 def format_message(message, response):
     '''Returns the formatted message by replacing variables inside message with variables gotten from endpoints'''
-    if message.find("{") != -1:
+    if '{' not in message:
         return message 
     else:
         for key in response:

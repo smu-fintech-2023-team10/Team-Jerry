@@ -103,6 +103,9 @@ def send_message():
     logging.info("Agent: {}".format(agent))
 
     response = detect_intent_texts(agent, text, language_code)
+    print("##### RESPONSE FORM DIALOGFLOW")
+    print(response)
+    print("#####")
 
     dialogflowMessageRaw = response['queryResult']['responseMessages']
     # processedText = processRawDFMessage(dialogflowMessageRaw)
@@ -115,7 +118,7 @@ def refractor_processRawDFMessage(raw_message):
     response_data = {
         "message": "",
         "endpoint": "",
-        "requestInput": ""
+        "data": ""
     }
     
     for message_data in raw_message:
@@ -128,9 +131,11 @@ def refractor_processRawDFMessage(raw_message):
             request_input = process_message[2]
             
             response_data["endpoint"] = endpoint
-            response_data["requestInput"] = request_input
+            response_data["data"] = request_input
             response_data["message"] = message_var
         else:
+            print("#THIS")
+            print(process_message)
             response_data["message"] = process_message[1]
     
     return response_data
