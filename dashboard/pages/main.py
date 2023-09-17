@@ -135,10 +135,16 @@ def render_business_function_pages(pathname, metric_choice):
                 columns= [{"name": i, "id": i} for i in df.columns],
                 sort_action="native",
                 sort_mode="multi",
+                export_columns="all",
+                export_format="csv",
+                export_headers="names",
+                page_action="native",
+                page_size=20,
+                # filter_action='native',
                 style_cell_conditional=[
                     {'if': {'column_id': 'qr_string'},
                     'width': '5px'},
-                ],
+                ]
             )
         
         if pathname == "/check-balance":
