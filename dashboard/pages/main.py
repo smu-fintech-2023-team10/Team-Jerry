@@ -5,11 +5,14 @@ from dash import dcc
 import plotly.express as px
 import pandas as pd
 from dash.dependencies import Input, Output
+from dash.exceptions import PreventUpdate
+import json
 
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions=True)
 
 
+# css
 SIDEBAR_STYLE = {
     "position": "fixed",
     "top": 0,
@@ -27,6 +30,7 @@ CONTENT_STYLE = {
 }
 
 
+# sidebar
 sidebar = html.Div(
     [   
         html.Img(src=app.get_asset_url('team_jerry_logo.png'), style={'height':'61px', 'width':'163px', "marginLeft": "20px"}),
@@ -47,37 +51,64 @@ sidebar = html.Div(
 )
 
 
-content = html.Div(id="page-content", children=[
-        html.H1(id='business-function-name', children="", style={'textAlign':'center', "color":"#081A51"}),
-        dcc.Dropdown(id='metric-choice',
-                    options=[{"label":x, "value":x} for x in ["Users", "Sessions"]],
-                    value="Users"
-                    ),
-        dcc.Graph(id="my-graph",
-                figure={}
-                ),
-], style=CONTENT_STYLE)
-
-
+# define app layout
 app.layout = html.Div(
     children=[
     dcc.Location(id="url"),
     sidebar,
-    content
+    html.Div(id="page-content", children=[], style=CONTENT_STYLE)
 ])
 
 
+# render app layout
 @app.callback(
-    [Output(component_id='business-function-name', component_property="children"), Output(component_id='my-graph', component_property='figure')],
-    [Input("url", "pathname"), Input(component_id='metric-choice', component_property='value'), Input(component_id='hello', component_property='value')]
-    
+    Output(component_id="page-content", component_property="children"),
+    Input(component_id="url", component_property="pathname")
 )
-def render_page_content(pathname, metric_choice):
+def render_page(pathname):
+    if pathname == "/":
+        page = [
+            html.H1(id='overview-header', children="Overview", style={'textAlign':'center', "color":"#081A51"}),
+            html.Div([
+                dcc.Graph(id="bank-function-distribution-graph",
+                        figure={},
+                        style={'width': '46%', 'display': 'inline-block'}
+                        ),
+                dcc.Graph(id="sentiment-distribution-graph",
+                        figure={},
+                        style={'width': '46%', 'display': 'inline-block'}
+                        ),
+            ])
+        ]
+        
+    else:
+        page = [
+            html.H1(id='business-function-header', children="", style={'textAlign':'center', "color":"#081A51"}),
+            dcc.Dropdown(id='metric-dropdown',
+                        options=[{"label":x, "value":x} for x in ["Users", "Sessions"]],
+                        value="Users"
+                        ),
+            dcc.Graph(id="business-function-graph",
+                    figure={}
+                    ),
+        ]
+    return page
 
+
+# render business function pages
+@app.callback(
+    [Output(component_id='business-function-header', component_property="children"), Output(component_id='business-function-graph', component_property='figure')],
+    [Input("url", "pathname"), Input(component_id='metric-dropdown', component_property='value')]
+)
+def render_business_function_pages(pathname, metric_choice):
+    if pathname == "/":
+        raise PreventUpdate
+    
     check_balance_df = pd.read_csv('../csv/check_balance.csv')
     paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
     scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
 
+    # user metrics chart
     def get_fig(df, metric_choice):
         df['date'] = pd.to_datetime(df['date'], format="%d/%m/%y")
         sorted_df = df.sort_values(by="date")
@@ -91,33 +122,19 @@ def render_page_content(pathname, metric_choice):
             fig = px.line(sessions_df, x="date", y="session count", title="Number of Sessions Over Time")
         
         return fig
-
-    if pathname == "/":
-        combined_df = pd.concat([check_balance_df, paynow_transfer_df, scan_to_pay_df], ignore_index=True)
-        bank_function_count = combined_df.groupby(["bank_function"]).size().reset_index(name="bank_function_count")
-        fig = px.pie(
-            bank_function_count,
-            values="bank_function_count",
-            names="bank_function",
-            title="Bank Function Distribution",
-            hole=0.6,
-            color_discrete_sequence=["#B8D5E5", "#92BFD8", "#63A3C7"]
-        )
-        return "Overview", fig
     
-
-    elif pathname == "/check-balance":
+    if pathname == "/check-balance":
         fig = get_fig(check_balance_df, metric_choice)
         return "Check Balance", fig
     
-    elif pathname == "/paynow-transfer":
+    if pathname == "/paynow-transfer":
         fig = get_fig(paynow_transfer_df, metric_choice)
         return "Paynow Transfer", fig
     
-    elif pathname == "/scan-to-pay":
+    if pathname == "/scan-to-pay":
         fig = get_fig(scan_to_pay_df, metric_choice)
         return "Scan to Pay", fig
-
+    
     return dbc.Jumbotron(
         [
             html.H1("404: Not found", className="text-danger"),
@@ -125,6 +142,66 @@ def render_page_content(pathname, metric_choice):
             html.P(f"The pathname {pathname} was not recognised..."),
         ]
     )
+
+
+# render overview page
+@app.callback(
+    [Output(component_id='bank-function-distribution-graph', component_property='figure'), Output(component_id='sentiment-distribution-graph', component_property='figure')],
+    Input("url", "pathname")
+    
+)
+def render_overview_page(pathname):
+
+    check_balance_df = pd.read_csv('../csv/check_balance.csv')
+    paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
+    scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
+
+    if pathname == "/":
+
+        # bank function distribution chart
+        combined_df = pd.concat([check_balance_df, paynow_transfer_df, scan_to_pay_df], ignore_index=True)
+        bank_function_count = combined_df.groupby(["bank_function"]).size().reset_index(name="bank_function_count")
+
+        # bank_function_distribution_fig = px.bar(
+        #     bank_function_count,
+        #     x='bank_function',
+        #     y='bank_function_count',
+        #     title='Bank Function Distribution',
+        #     color_discrete_sequence=["#B8D5E5", "#92BFD8", "#63A3C7"]
+        # )
+
+        bank_function_distribution_fig = px.pie(
+            bank_function_count,
+            values="bank_function_count",
+            names="bank_function",
+            title="Bank Function Distribution",
+            hole=0.6,
+            color_discrete_sequence=["#FCCA8C", "#FBB35B", "#FA971F"]
+        )
+
+        bank_function_distribution_fig.update_layout(title_x=0.5)
+
+        # sentiment distribution chart
+        sentiment_df = pd.read_csv("../csv/sentiments.csv")
+        sentiment_df["sentiment_label_score"] = sentiment_df["sentiment_label_score"].apply(lambda x: x.replace("'", "\""))
+        sentiment_df["sentiment_label"] = sentiment_df["sentiment_label_score"].apply(lambda x: json.loads(x)["label"])
+        sentiment_distribution = sentiment_df.groupby(["sentiment_label"]).size().reset_index(name="sentiment_distribution")
+
+        sentiment_distribution_fig = px.pie(
+            sentiment_distribution,
+            values="sentiment_distribution",
+            names="sentiment_label",
+            title="Sentiment Distribution",
+            hole=0.6,
+            color_discrete_sequence=["#B8D5E5", "#92BFD8"]
+        )
+
+        sentiment_distribution_fig.update_layout(title_x=0.5)
+
+        return bank_function_distribution_fig, sentiment_distribution_fig
+
+    else:
+        PreventUpdate
 
 
 if __name__=='__main__':

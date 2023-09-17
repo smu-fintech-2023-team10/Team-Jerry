@@ -1,50 +1,50 @@
-bank_function,date,account_number,see_past_transactions,msgs_to_customer_support
-Check Balance,1/6/23,12345678,Past 7 days,"[""I have a question about my recent transactions."",  ""How can I set up e-statements?"",  ""Can you help me with my credit card rewards?""]"
-Check Balance,1/6/23,23456789,Past 1 month,"[""I'm locked out of my online banking account."",  ""What's the process for applying for a credit card?"",  ""I'd like to update my contact information.""] "
-Check Balance,2/6/23,34567890,Past 3 months,"[""I suspect fraud on my account. What should I do?"",  ""Can you assist with changing my contact information?"",  ""I'd like to request a credit limit increase.""]"
-Check Balance,2/6/23,45678901,Past 7 days,"[""I received a suspicious email. Is it from the bank?"",  ""How can I enroll in e-statements?"",  ""I need to update my account beneficiaries.""] "
-Check Balance,2/6/23,56789012,Past 1 month,"[""I'm experiencing issues with online banking."",  ""What are the current CD rates?"",  ""Can you help me with a home equity line of credit?""] "
-Check Balance,3/6/23,67890123,Past 3 months,"[""I want to open a custodial account for my child."",  ""What's the bank's holiday schedule?"",  ""I'd like to change my online banking password.""] "
-Check Balance,3/6/23,78901234,Past 7 days,"[""Can you assist with wire transfer instructions?"",  ""I need to order new debit cards."",  ""How can I set up direct deposit?""] "
-Check Balance,3/6/23,89012345,Past 1 month,"[""I'm having trouble with mobile check deposit."",  ""Is there a branch nearby I can visit?"",  ""I lost my checkbook. What should I do?""] "
-Check Balance,3/6/23,90123456,Past 3 months,"[""I have a question about my mortgage."",  ""Can you provide information on investment options?"",  ""I need assistance with a foreign currency exchange.""] "
-Check Balance,1/7/23,23456789,Past 7 days,"[""I received a credit card statement. Can you clarify the charges?"",  ""How can I enroll in e-statements?"",  ""I need to update my account beneficiaries.""]"
-Check Balance,1/7/23,34567890,Past 1 month,"[""I suspect fraud on my account. What should I do?"",  ""Can you assist with changing my contact information?"",  ""I'd like to request a credit limit increase.""]"
-Check Balance,1/7/23,45678901,Past 3 months,"[""I have a question about a recent transaction."",  ""Can you provide tax documentation for my account?"",  ""I'd like to sign up for mobile banking.""]"
-Check Balance,1/7/23,56789012,Past 7 days,"[""I'm interested in opening a joint account."",  ""What's the bank's holiday schedule?"",  ""I'd like to change my online banking password.""] "
-Check Balance,1/7/23,67890123,Past 1 month,"[""Can you assist with wire transfer instructions?"",  ""I need to order new debit cards."",  ""How can I set up direct deposit?""] "
-Check Balance,1/7/23,78901234,Past 3 months,"[""I'm having trouble with mobile check deposit."",  ""Is there a branch nearby I can visit?"",  ""I lost my checkbook. What should I do?""] "
-Check Balance,2/7/23,89012345,Past 7 days,"[""I have a question about my mortgage."",  ""Can you provide information on investment options?"",  ""I need assistance with a foreign currency exchange.""] "
-Check Balance,2/7/23,90123456,Past 1 month,[]
-Check Balance,2/7/23,34567890,Past 3 months,"[""I received a suspicious call claiming to be from the bank. Is it legitimate?"",  ""How can I request account statements?"",  ""Can you provide information on retirement accounts?""]"
-Check Balance,2/7/23,45678901,Past 7 days,"[""I need help with a stop payment request."",  ""Can you assist with changing my contact information?"",  ""I'd like to request a credit limit increase.""]"
-Check Balance,2/7/23,56789012,Past 1 month,"[""I want to open a custodial account for my child."",  ""What's the bank's holiday schedule?"",  ""I'd like to change my online banking password.""] "
-Check Balance,2/7/23,67890123,Past 3 months,"[""Can you assist with wire transfer instructions?"",  ""I need to order new debit cards."",  ""How can I set up direct deposit?""] "
-Check Balance,2/7/23,78901234,Past 7 days,"[""I'm having trouble with mobile check deposit."",  ""Is there a branch nearby I can visit?"",  ""I lost my checkbook. What should I do?""] "
-Check Balance,2/7/23,89012345,Past 1 month,"[""I have a question about my mortgage."",  ""Can you provide information on investment options?"",  ""I need assistance with a foreign currency exchange.""] "
-Check Balance,3/7/23,90123456,Past 3 months,"[""I'm experiencing issues with online banking."",  ""What are the current CD rates?"",  ""Can you help me with a home equity line of credit?""] "
-Check Balance,3/7/23,12345678,Past 7 days,[]
-Check Balance,3/7/23,23456789,Past 1 month,"[""I'm having trouble with my debit card."",  ""Is there a branch nearby I can visit?"",  ""I lost my checkbook. What should I do?""]"
-Check Balance,3/7/23,34567890,Past 3 months,"[""I have a question about my mortgage."",  ""Can you provide information on investment options?"",  ""I need assistance with a foreign currency exchange.""] "
-Check Balance,3/7/23,45678901,Past 7 days,"[""I received a suspicious email. Is it from the bank?"",  ""How can I enroll in e-statements?"",  ""I need to update my account beneficiaries.""] "
-Check Balance,3/7/23,56789012,Past 1 month,"[""I'm experiencing issues with online banking."",  ""What are the current CD rates?"",  ""Can you help me with a home equity line of credit?""] "
-Check Balance,3/7/23,67890123,Past 3 months,"[""I want to open a custodial account for my child."",  ""What's the bank's holiday schedule?"",  ""I'd like to change my online banking password.""] "
-Check Balance,3/7/23,12345678,Past 1 month,"[""I need assistance with a loan application."",  ""What are the current interest rates?""]"
-Check Balance,3/7/23,23456789,Past 7 days,"[""How can I open a new account?"",  ""What documents are required for account opening?""]"
-Check Balance,3/7/23,34567890,Past 3 months,"[""I'd like to change my account PIN."",  ""How can I update my contact information?""]"
-Check Balance,1/8/23,45678901,Past 7 days,"[""I lost my debit card. What should I do?"",  ""Can you block my card?""]"
-Check Balance,1/8/23,56789012,Past 1 month,"[""I have questions about mortgage options."",  ""How can I apply for a mortgage?""]"
-Check Balance,1/8/23,67890123,Past 3 months,"[""Can you send me my account statement?"",  ""How can I access e-statements?""]"
-Check Balance,1/8/23,78901234,Past 1 month,"[""I've moved. How do I update my address?"", ""What's the process for changing my address?""]"
-Check Balance,1/8/23,89012345,Past 7 days,[]
-Check Balance,1/8/23,90123456,Past 3 months,"[""I'd like to apply for a credit card."",  ""What are the credit card options available?""]"
-Check Balance,1/8/23,23456789,Past 1 month,"[""I see an incorrect charge on my statement."",  ""How can I dispute a transaction?""]"
-Check Balance,1/8/23,34567890,Past 3 months,"[""I need to initiate a wire transfer."",  ""What information do I need for a wire transfer?""]"
-Check Balance,1/8/23,45678901,Past 1 month,"[""How can I open a joint account?"",  ""What are the joint account requirements?""]"
-Check Balance,1/8/23,56789012,Past 7 days,"[""Tell me about personal loan options."",  ""What's the loan application process?""]"
-Check Balance,1/8/23,67890123,Past 3 months,[]
-Check Balance,1/8/23,78901234,Past 7 days,"[""I need to stop a payment on my account."",  ""How can I request a stop payment?""]"
-Check Balance,1/8/23,89012345,Past 1 month,"[""Tell me about home equity loan options."",  ""What's the interest rate for home equity loans?""]"
-Check Balance,1/8/23,90123456,Past 3 months,"[""I'd like to apply for a small business loan."",  ""What's the process for small business loan applications?""]"
-Check Balance,1/8/23,34567890,Past 7 days,"[""Can I increase my credit card limit?"",  ""What's the criteria for credit limit increases?""]"
-,,,,
+bank_function,date,account_number,see_past_transactions
+Check Balance,1/6/23,12345678,Past 7 days
+Check Balance,1/6/23,23456789,Past 1 month
+Check Balance,2/6/23,34567890,Past 3 months
+Check Balance,2/6/23,45678901,Past 7 days
+Check Balance,2/6/23,56789012,Past 1 month
+Check Balance,3/6/23,67890123,Past 3 months
+Check Balance,3/6/23,78901234,Past 7 days
+Check Balance,3/6/23,89012345,Past 1 month
+Check Balance,3/6/23,90123456,Past 3 months
+Check Balance,1/7/23,23456789,Past 7 days
+Check Balance,1/7/23,34567890,Past 1 month
+Check Balance,1/7/23,45678901,Past 3 months
+Check Balance,1/7/23,56789012,Past 7 days
+Check Balance,1/7/23,67890123,Past 1 month
+Check Balance,1/7/23,78901234,Past 3 months
+Check Balance,2/7/23,89012345,Past 7 days
+Check Balance,2/7/23,90123456,Past 1 month
+Check Balance,2/7/23,34567890,Past 3 months
+Check Balance,2/7/23,45678901,Past 7 days
+Check Balance,2/7/23,56789012,Past 1 month
+Check Balance,2/7/23,67890123,Past 3 months
+Check Balance,2/7/23,78901234,Past 7 days
+Check Balance,2/7/23,89012345,Past 1 month
+Check Balance,3/7/23,90123456,Past 3 months
+Check Balance,3/7/23,12345678,Past 7 days
+Check Balance,3/7/23,23456789,Past 1 month
+Check Balance,3/7/23,34567890,Past 3 months
+Check Balance,3/7/23,45678901,Past 7 days
+Check Balance,3/7/23,56789012,Past 1 month
+Check Balance,3/7/23,67890123,Past 3 months
+Check Balance,3/7/23,12345678,Past 1 month
+Check Balance,3/7/23,23456789,Past 7 days
+Check Balance,3/7/23,34567890,Past 3 months
+Check Balance,1/8/23,45678901,Past 7 days
+Check Balance,1/8/23,56789012,Past 1 month
+Check Balance,1/8/23,67890123,Past 3 months
+Check Balance,1/8/23,78901234,Past 1 month
+Check Balance,1/8/23,89012345,Past 7 days
+Check Balance,1/8/23,90123456,Past 3 months
+Check Balance,1/8/23,23456789,Past 1 month
+Check Balance,1/8/23,34567890,Past 3 months
+Check Balance,1/8/23,45678901,Past 1 month
+Check Balance,1/8/23,56789012,Past 7 days
+Check Balance,1/8/23,67890123,Past 3 months
+Check Balance,1/8/23,78901234,Past 7 days
+Check Balance,1/8/23,89012345,Past 1 month
+Check Balance,1/8/23,90123456,Past 3 months
+Check Balance,1/8/23,34567890,Past 7 days
+,,,
