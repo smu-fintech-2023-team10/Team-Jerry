@@ -72,6 +72,10 @@ def get_message_reply():
         if(qrStringObj['success'] == True):
             qrString = qrStringObj['qrString']
             decoded = decode_paynow_qr(qrString) #QR object with payment info
+            data = {
+            "message": "Start QR Flow",
+            "userId": sender_phone_number
+            }
             # {
             # 'Payload Format Indicator': '01', 
             # 'Point of Initiation Method': '11', 
@@ -83,9 +87,38 @@ def get_message_reply():
             # 'Merchant City': 'SINGAPORE', 
             # 'CRC': '7F54'
             # }
-            print(decoded["Merchant Account Information"]) #{'Reverse Domain Name': 'SG.PAYNOW', 'Proxy Type': 'MSIDN', 'Proxy Value': '+6597988922', 'Editable': '1'}
+            print(decoded) #{'Reverse Domain Name': 'SG.PAYNOW', 'Proxy Type': 'MSIDN', 'Proxy Value': '+6597988922', 'Editable': '1'}
+            url = os.getenv("HOST_URL") + "/runModel"
+            response_data = requests.post(url, json=data)
+            print(response_data)
+            response = setup_ocbc_api_request(response_data)
+            ##send to FB ##CONTINUE FROM HERE
+            log = {'userID': sender_phone_number,
+                'userMsg': incoming_message,
+                'intent': json.loads(response_data.text)['intent'],
+                'reponse':response}
+            
+            print(log)
+            send_message(response, sender_phone_number, client)
+            return "Success"
         else:
+            data = {
+            "message": "Not QR Code",
+            "userId": sender_phone_number
+            }
             print("This is not a QR Code")
+            url = os.getenv("HOST_URL") + "/runModel"
+            response_data = requests.post(url, json=data)
+            print(response_data)
+            response = setup_ocbc_api_request(response_data)
+            ##send to FB ##CONTINUE FROM HERE
+            log = {'userID': sender_phone_number,
+                'userMsg': incoming_message,
+                'intent': json.loads(response_data.text)['intent'],
+                'reponse':response}
+            print(log)
+            send_message(response, sender_phone_number, client)
+            return "Success"
     else:
         data = {
             "message": incoming_message,
@@ -107,7 +140,7 @@ def get_message_reply():
 
 
         send_message(response, sender_phone_number, client)
-    return "Success"
+        return "Success"
 
 # ======= END ROUTES =======
 
@@ -187,7 +220,7 @@ def setup_ocbc_api_request(res):
         phoneNumber = payloadData.get('phoneNumber')
         accountNumber = payloadData.get('bankAccountNumber')
         nric = payloadData.get('nric') 
-        proxyData = getProxy(phoneNumber, nric)
+        proxyData = getProxy(phoneNumber, nric) ###need to handle UEN here if not personal. 
         setupData = {
             "endpoint": "/paynowEnquiry",
             "data": json.dumps(proxyData),

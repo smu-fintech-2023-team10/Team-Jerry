@@ -8,7 +8,7 @@ def decode_26(input_string):
             "04": "Expiry date (Optional)",
             "05": "Transaction Reference (Optional)"
         }
-    key_descriptions_proxyType = {'0':'MSIDN','1':'NRIC','2':'UEN'}
+    key_descriptions_proxyType = {'0':'MSISDN','1':'NRIC','2':'UEN'}
         
     while input_string:
         obj_id = input_string[:2]
