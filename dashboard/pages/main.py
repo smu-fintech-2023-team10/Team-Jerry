@@ -54,9 +54,9 @@ sidebar = html.Div(
 # define app layout
 app.layout = html.Div(
     children=[
-    dcc.Location(id="url"),
-    sidebar,
-    html.Div(id="page-content", children=[], style=CONTENT_STYLE)
+        dcc.Location(id="url"),
+        sidebar,
+        html.Div(id="page-content", children=[], style=CONTENT_STYLE)
 ])
 
 
@@ -70,11 +70,11 @@ def render_page(pathname):
         page = [
             html.H1(id='overview-header', children="Overview", style={'textAlign':'center', "color":"#081A51"}),
             html.Div([
-                dcc.Graph(id="bank-function-distribution-graph",
+                dcc.Graph(id="bank-function-distribution-fig",
                         figure={},
                         style={'width': '46%', 'display': 'inline-block'}
                         ),
-                dcc.Graph(id="sentiment-distribution-graph",
+                dcc.Graph(id="sentiment-distribution-fig",
                         figure={},
                         style={'width': '46%', 'display': 'inline-block'}
                         ),
@@ -96,7 +96,7 @@ def render_page(pathname):
                 style={
                     "paddingLeft": "5%",
                     "paddingRight": "5%"
-                }
+                },
             )
         ]
     return page
@@ -111,61 +111,58 @@ def render_business_function_pages(pathname, metric_choice):
     if pathname == "/":
         raise PreventUpdate
     
-    check_balance_df = pd.read_csv('../csv/check_balance.csv')
-    paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
-    scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
+    else:
 
-    # generate user metrics chart
-    def get_fig(df, metric_choice):
-        df['date'] = pd.to_datetime(df['date'], format="%d/%m/%y")
-        sorted_df = df.sort_values(by="date")
+        # generate user metrics chart
+        def get_fig(df, metric_choice):
+            df['date'] = pd.to_datetime(df['date'], format="%d/%m/%y")
+            sorted_df = df.sort_values(by="date")
+            
+            if metric_choice == "Users":
+                users_df = sorted_df.groupby(["date"])['account_number'].nunique().reset_index(name="user count")
+                fig = px.line(users_df, x="date", y="user count", title="Number of Users Over Time")
+            
+            elif metric_choice == "Sessions":
+                sessions_df = sorted_df.groupby(["date"]).size().reset_index(name="session count")
+                fig = px.line(sessions_df, x="date", y="session count", title="Number of Sessions Over Time")
+            
+            return fig
         
-        if metric_choice == "Users":
-            users_df = sorted_df.groupby(["date"])['account_number'].nunique().reset_index(name="user count")
-            fig = px.line(users_df, x="date", y="user count", title="Number of Users Over Time")
+        # generate datatable
+        def datatable(df):
+            return dash_table.DataTable(
+                data=df.to_dict('records'), 
+                columns= [{"name": i, "id": i} for i in df.columns],
+                sort_action="native",
+                sort_mode="multi",
+                style_cell_conditional=[
+                    {'if': {'column_id': 'qr_string'},
+                    'width': '5px'},
+                ],
+            )
         
-        elif metric_choice == "Sessions":
-            sessions_df = sorted_df.groupby(["date"]).size().reset_index(name="session count")
-            fig = px.line(sessions_df, x="date", y="session count", title="Number of Sessions Over Time")
+        if pathname == "/check-balance":
+            name = "Check Balance"
+            df = pd.read_csv('../csv/check_balance.csv')
+            
         
-        return fig
-    
-    # generate datatable
-    def datatable(df):
-        return dash_table.DataTable(
-            data=df.to_dict('records'), 
-            columns= [{"name": i, "id": i} for i in df.columns],
-            sort_action="native",
-            sort_mode="multi",
-        )
-    
-    if pathname == "/check-balance":
-        fig = get_fig(check_balance_df, metric_choice)
-        table = datatable(check_balance_df)
-        return "Check Balance", fig, table
-    
-    if pathname == "/paynow-transfer":
-        fig = get_fig(paynow_transfer_df, metric_choice)
-        table = datatable(paynow_transfer_df)
-        return "Paynow Transfer", fig, table
-    
-    if pathname == "/scan-to-pay":
-        fig = get_fig(scan_to_pay_df, metric_choice)
-        table = datatable(scan_to_pay_df)
-        return "Scan to Pay", fig, table
-    
-    return dbc.Jumbotron(
-        [
-            html.H1("404: Not found", className="text-danger"),
-            html.Hr(),
-            html.P(f"The pathname {pathname} was not recognised..."),
-        ]
-    )
+        if pathname == "/paynow-transfer":
+            name = "Paynow Transfer"
+            df = pd.read_csv('../csv/paynow_transfer.csv')
+        
+        if pathname == "/scan-to-pay":
+            name = "Scan to Pay"
+            df = pd.read_csv('../csv/scan_to_pay.csv')
+        
+        fig = get_fig(df, metric_choice)
+        table = datatable(df)
+        
+        return name, fig, table
 
 
 # render overview page
 @app.callback(
-    [Output(component_id='bank-function-distribution-graph', component_property='figure'), Output(component_id='sentiment-distribution-graph', component_property='figure')],
+    [Output(component_id='bank-function-distribution-fig', component_property='figure'), Output(component_id='sentiment-distribution-fig', component_property='figure')],
     Input("url", "pathname")
     
 )
