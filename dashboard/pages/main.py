@@ -5,7 +5,6 @@ from dash import dcc
 import plotly.express as px
 import pandas as pd
 from dash.dependencies import Input, Output
-from ..sentiment_analysis.sentiment_analysis import msgs_sentiment
 
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -35,7 +34,7 @@ sidebar = html.Div(
         html.Hr(),
         dbc.Nav(
             [
-                dbc.NavLink("Overview", href="/overview", active="exact", className='text-light font-weight-bold'),
+                dbc.NavLink("Overview", href="/", active="exact", className='text-light font-weight-bold'),
                 dbc.NavLink("Check Balance", href="/check-balance", active="exact", className='text-light font-weight-bold'),
                 dbc.NavLink("PayNow Transfer", href="/paynow-transfer", active="exact", className='text-light font-weight-bold'),
                 dbc.NavLink("Scan To Pay", href="/scan-to-pay", active="exact", className='text-light font-weight-bold')
@@ -73,7 +72,11 @@ app.layout = html.Div(
     [Input("url", "pathname"), Input(component_id='metric-choice', component_property='value')]
     
 )
-def render_page_content(pathname="/scan-to-pay", metric_choice="Users"):
+def render_page_content(pathname, metric_choice):
+
+    check_balance_df = pd.read_csv('../csv/check_balance.csv')
+    paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
+    scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
 
     def get_fig(df, metric_choice):
         df['date'] = pd.to_datetime(df['date'], format="%d/%m/%y")
@@ -89,28 +92,30 @@ def render_page_content(pathname="/scan-to-pay", metric_choice="Users"):
         
         return fig
 
-    if pathname == "/overview":
-        return [
-
-                ]
+    if pathname == "/":
+        combined_df = pd.concat([check_balance_df, paynow_transfer_df, scan_to_pay_df], ignore_index=True)
+        bank_function_count = combined_df.groupby(["bank_function"]).size().reset_index(name="bank_function_count")
+        fig = px.pie(
+            bank_function_count,
+            values="bank_function_count",
+            names="bank_function",
+            title="Bank Function Distribution",
+            hole=0.6,
+            color_discrete_sequence=["#B8D5E5", "#92BFD8", "#63A3C7"]
+        )
+        return "Overview", fig
     
-    elif pathname == "/check-balance":
-        return [
 
-                ]
+    elif pathname == "/check-balance":
+        fig = get_fig(check_balance_df, metric_choice)
+        return "Check Balance", fig
     
     elif pathname == "/paynow-transfer":
-
-        paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
         fig = get_fig(paynow_transfer_df, metric_choice)
-
         return "Paynow Transfer", fig
     
     elif pathname == "/scan-to-pay":
-
-        scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
         fig = get_fig(scan_to_pay_df, metric_choice)
-
         return "Scan to Pay", fig
 
     return dbc.Jumbotron(
