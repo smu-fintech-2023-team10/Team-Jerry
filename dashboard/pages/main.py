@@ -1,4 +1,4 @@
-import dash
+import dash, dash_table
 import dash_bootstrap_components as dbc
 from dash import html
 from dash import dcc
@@ -91,13 +91,20 @@ def render_page(pathname):
             dcc.Graph(id="business-function-graph",
                     figure={}
                     ),
+            html.Div(
+                id="datatable",
+                style={
+                    "paddingLeft": "5%",
+                    "paddingRight": "5%"
+                }
+            )
         ]
     return page
 
 
 # render business function pages
 @app.callback(
-    [Output(component_id='business-function-header', component_property="children"), Output(component_id='business-function-graph', component_property='figure')],
+    [Output(component_id='business-function-header', component_property="children"), Output(component_id='business-function-graph', component_property='figure'), Output(component_id='datatable', component_property='children')],
     [Input("url", "pathname"), Input(component_id='metric-dropdown', component_property='value')]
 )
 def render_business_function_pages(pathname, metric_choice):
@@ -108,7 +115,7 @@ def render_business_function_pages(pathname, metric_choice):
     paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
     scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
 
-    # user metrics chart
+    # generate user metrics chart
     def get_fig(df, metric_choice):
         df['date'] = pd.to_datetime(df['date'], format="%d/%m/%y")
         sorted_df = df.sort_values(by="date")
@@ -123,17 +130,29 @@ def render_business_function_pages(pathname, metric_choice):
         
         return fig
     
+    # generate datatable
+    def datatable(df):
+        return dash_table.DataTable(
+            data=df.to_dict('records'), 
+            columns= [{"name": i, "id": i} for i in df.columns],
+            sort_action="native",
+            sort_mode="multi",
+        )
+    
     if pathname == "/check-balance":
         fig = get_fig(check_balance_df, metric_choice)
-        return "Check Balance", fig
+        table = datatable(check_balance_df)
+        return "Check Balance", fig, table
     
     if pathname == "/paynow-transfer":
         fig = get_fig(paynow_transfer_df, metric_choice)
-        return "Paynow Transfer", fig
+        table = datatable(paynow_transfer_df)
+        return "Paynow Transfer", fig, table
     
     if pathname == "/scan-to-pay":
         fig = get_fig(scan_to_pay_df, metric_choice)
-        return "Scan to Pay", fig
+        table = datatable(scan_to_pay_df)
+        return "Scan to Pay", fig, table
     
     return dbc.Jumbotron(
         [
@@ -158,17 +177,9 @@ def render_overview_page(pathname):
 
     if pathname == "/":
 
-        # bank function distribution chart
+        # generate bank function distribution chart
         combined_df = pd.concat([check_balance_df, paynow_transfer_df, scan_to_pay_df], ignore_index=True)
         bank_function_count = combined_df.groupby(["bank_function"]).size().reset_index(name="bank_function_count")
-
-        # bank_function_distribution_fig = px.bar(
-        #     bank_function_count,
-        #     x='bank_function',
-        #     y='bank_function_count',
-        #     title='Bank Function Distribution',
-        #     color_discrete_sequence=["#B8D5E5", "#92BFD8", "#63A3C7"]
-        # )
 
         bank_function_distribution_fig = px.pie(
             bank_function_count,
@@ -181,7 +192,7 @@ def render_overview_page(pathname):
 
         bank_function_distribution_fig.update_layout(title_x=0.5)
 
-        # sentiment distribution chart
+        # generate sentiment distribution chart
         sentiment_df = pd.read_csv("../csv/sentiments.csv")
         sentiment_df["sentiment_label_score"] = sentiment_df["sentiment_label_score"].apply(lambda x: x.replace("'", "\""))
         sentiment_df["sentiment_label"] = sentiment_df["sentiment_label_score"].apply(lambda x: json.loads(x)["label"])
