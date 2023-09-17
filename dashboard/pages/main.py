@@ -91,13 +91,16 @@ def render_page(pathname):
             dcc.Graph(id="business-function-graph",
                     figure={}
                     ),
-            html.Div(
-                id="datatable",
-                style={
-                    "paddingLeft": "5%",
-                    "paddingRight": "5%"
-                },
-            )
+            html.Div([
+                html.Link(rel="stylesheet", href="/assets/custom.css"),
+                html.Div(
+                    id="datatable",
+                    style={
+                        "paddingLeft": "5%",
+                        "paddingRight": "5%"
+                    },
+                )
+            ])
         ]
     return page
 
@@ -141,10 +144,7 @@ def render_business_function_pages(pathname, metric_choice):
                 page_action="native",
                 page_size=20,
                 # filter_action='native',
-                style_cell_conditional=[
-                    {'if': {'column_id': 'qr_string'},
-                    'width': '5px'},
-                ]
+                style_cell={'textOverflow': 'ellipsis', 'maxWidth': '150px'},
             )
         
         if pathname == "/check-balance":
