@@ -129,15 +129,22 @@ def get_message_reply():
         print(response_data)
         response = setup_ocbc_api_request(response_data)
 
-
+        chat_data_ref = root_ref.child('chatData')
+        timeNow = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         ##send to FB ##CONTINUE FROM HERE
-        log = {'userID': sender_phone_number,
+        data_to_store = {'userID': sender_phone_number,
                'userMsg': incoming_message,
                'intent': json.loads(response_data.text)['intent'],
-               'reponse':response}
-        
-        print(log)
+               'reponse':response,
+                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                }
 
+        # Specify the key/id you want to use
+        entry_id = sender_phone_number+"_"+timeNow
+
+        # Set data with the custom key
+        res = chat_data_ref.child(entry_id).set(data_to_store)
+        print(res)
 
         send_message(response, sender_phone_number, client)
         return "Success"
