@@ -128,23 +128,17 @@ def get_message_reply():
         response_data = requests.post(url, json=data)
         print(response_data)
         response = setup_ocbc_api_request(response_data)
+               
 
-        chat_data_ref = root_ref.child('chatData')
-        timeNow = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        ##send to FB ##CONTINUE FROM HERE
         data_to_store = {'userID': sender_phone_number,
                'userMsg': incoming_message,
                'intent': json.loads(response_data.text)['intent'],
                'reponse':response,
-                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 }
+        
+        # Log Data in firebase 
+        storeUnstructedChatData(sender_phone_number,data_to_store)
 
-        # Specify the key/id you want to use
-        entry_id = sender_phone_number+"_"+timeNow
-
-        # Set data with the custom key
-        res = chat_data_ref.child(entry_id).set(data_to_store)
-        print(res)
 
         send_message(response, sender_phone_number, client)
         return "Success"
@@ -367,7 +361,17 @@ def send_message(messageBody, recepientNumber, client):
     # print(message.sid)
     return
 
+def storeUnstructedChatData(userId,dataStore):
+    # Specify the key/id you want to use
+    timeNow = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    entry_id = userId+"_"+timeNow
 
+    chat_data_ref = root_ref.child('chatData')
+    dataStore['timestamp'] = timeNow
+    
+    # Set data with the custom key
+    res = chat_data_ref.child(entry_id).set(dataStore)
+    return res
 
 client = refresh_twilio_auth_token()
 # Set up the scheduler
