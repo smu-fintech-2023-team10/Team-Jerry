@@ -129,6 +129,7 @@ def render_business_function_pages(pathname, metric_choice):
                 sessions_df = sorted_df.groupby(["date"]).size().reset_index(name="session count")
                 fig = px.line(sessions_df, x="date", y="session count", title="Number of Sessions Over Time")
             
+            fig.update_xaxes(rangeslider_visible=True)
             return fig
         
         # generate datatable
@@ -211,6 +212,9 @@ def render_overview_page(pathname):
         )
 
         sentiment_distribution_fig.update_layout(title_x=0.5)
+
+        # generate user metrics chart
+
 
         return bank_function_distribution_fig, sentiment_distribution_fig
 
