@@ -79,15 +79,21 @@ def render_page(pathname):
                         style={'width': '46%', 'display': 'inline-block'}
                         ),
             ]),
-            html.Div(
+            html.Div([
+                dcc.Dropdown(id='overview-metric-dropdown',
+                    options=[{"label":x, "value":x} for x in ["Users", "Sessions"]],
+                    value="Users",
+                    style={
+                        'text-align': 'center',
+                    }
+                    ),
                 dcc.Graph(
                     id="overview-metrics-fig"
-                ),
+                    )],
                 style={
-                        "paddingLeft": "2%",
-                        "paddingRight": "4%"
-                }
-            )
+                    "paddingLeft": "4%",
+                    "paddingRight": "4%"
+                })
         ]
         
     else:
@@ -113,6 +119,9 @@ def render_page(pathname):
         ]
     return page
 
+check_balance_df = pd.read_csv('../csv/check_balance.csv')
+paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
+scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
 
 # render business function pages
 @app.callback(
@@ -159,16 +168,16 @@ def render_business_function_pages(pathname, metric_choice):
         
         if pathname == "/check-balance":
             name = "Check Balance"
-            df = pd.read_csv('../csv/check_balance.csv')
+            df = check_balance_df
             
         
         if pathname == "/paynow-transfer":
             name = "Paynow Transfer"
-            df = pd.read_csv('../csv/paynow_transfer.csv')
+            df = paynow_transfer_df
         
         if pathname == "/scan-to-pay":
             name = "Scan to Pay"
-            df = pd.read_csv('../csv/scan_to_pay.csv')
+            df = scan_to_pay_df
         
         fig = get_fig(df, metric_choice)
         table = datatable(df)
@@ -179,14 +188,10 @@ def render_business_function_pages(pathname, metric_choice):
 # render overview page
 @app.callback(
     [Output(component_id='bank-function-distribution-fig', component_property='figure'), Output(component_id='sentiment-distribution-fig', component_property='figure'), Output(component_id='overview-metrics-fig', component_property='figure')],
-    Input("url", "pathname")
+    [Input("url", "pathname"), Input(component_id='overview-metric-dropdown', component_property='value')]
     
 )
-def render_overview_page(pathname):
-
-    check_balance_df = pd.read_csv('../csv/check_balance.csv')
-    paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
-    scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
+def render_overview_page(pathname, metric_choice):
 
     if pathname == "/":
 
@@ -222,29 +227,30 @@ def render_overview_page(pathname):
 
         sentiment_distribution_fig.update_layout(title_x=0.5)
 
-        # generate user metrics chart
-        users_df_final = pd.DataFrame({"date": []})
-        sessions_df_final = pd.DataFrame({"date": []})
+        # generate overview user metrics chart
+        def process_bank_function(df, metric_choice, bf):
+            df['date'] = pd.to_datetime(df['date'], format="%d/%m/%y")
+            df.sort_values(by="date", inplace=True)
 
+            if metric_choice == "Users":
+                return df.groupby(["date"])['account_number'].nunique().reset_index(name=bf)
+            
+            elif metric_choice == "Sessions":
+                return df.groupby(["date"]).size().reset_index(name=bf)
+        
         bf_csv = {"check balance": check_balance_df, "paynow transfer": paynow_transfer_df, "scan to pay": scan_to_pay_df}
-        # bf_colour = {'check balance': '#63A3C7', 'paynow transfer': '#74BF7C', 'scan to pay': '#FA971E'}
         bf_colour = {'check balance': '#92C0D8', 'paynow transfer': '#FDCA8C', 'scan to pay': '#9DD4A3'}
 
+        final_df = pd.DataFrame({"date": []})
         for bf in bf_csv:
             df = bf_csv[bf]
-            df['date'] = pd.to_datetime(df['date'], format="%d/%m/%y")
-            sorted_df = df.sort_values(by="date")
+            dff = process_bank_function(df, metric_choice, bf)
+            final_df = pd.merge(final_df, dff, on='date', how='outer')
 
-            users_df = sorted_df.groupby(["date"])['account_number'].nunique().reset_index(name=bf)
-            sessions_df = sorted_df.groupby(["date"]).size().reset_index(name=bf)
-
-            users_df_final = pd.merge(users_df_final, users_df, on='date', how='outer')
-            sessions_df_final = pd.merge(sessions_df_final, sessions_df, on='date', how='outer')
-
-        overview_user_metrics_fig = px.line(users_df_final, x='date', y=users_df_final.columns, color_discrete_map=bf_colour)
+        overview_user_metrics_fig = px.line(final_df, x='date', y=final_df.columns, color_discrete_map=bf_colour)
         overview_user_metrics_fig.update_layout(yaxis_title='user count')
         overview_user_metrics_fig.update_traces(line={'width': 2})
-
+        overview_user_metrics_fig.update_xaxes(rangeslider_visible=True)
 
         return bank_function_distribution_fig, sentiment_distribution_fig, overview_user_metrics_fig
 
