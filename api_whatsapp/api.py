@@ -257,9 +257,9 @@ def setup_ocbc_api_request(res):
 
         response = send_ocbc_api(url, "POST", payload)
         if response["Success"]:
-            approvalMessage = format_paynow_response(response, amount, proxyData["ProxyValue"])
+            approvalMessage = format_paynow_response(response, amount, proxyData["ProxyValue"],type)
         else:
-            approvalMessage = f"Your PayNow request of ${amount} to {proxyData['ProxyValue']} is not approved. Please ensure you have entered a valid phone number or NRIC."
+            approvalMessage = f"Your PayNow request of ${amount} to {proxyData['ProxyValue']} is not approved. Please ensure you have entered a valid phone number/NRIC/UEN."
         
         return {"approvalMessage": approvalMessage}
 
@@ -294,7 +294,9 @@ def setup_ocbc_api_request(res):
 
     func = switch.get(endpoint, default_response)
     finalRes = func()
-
+    print("########THIS#######")
+    print(finalRes)
+    print(message)
     return format_message(message, finalRes)
     
 
@@ -324,27 +326,42 @@ def getProxy(phoneNumber, nric):
         "ProxyValue": proxyValue
     }
 
-def format_paynow_response(response, amount, proxyValue):
+def format_paynow_response(response, amount, proxyValue,type):
     '''Returns the approval message for PayNow'''
-    response_data = response
-    if response_data["Success"]:
-        transaction_time = response_data["Results"]["TransactionTime"]
-        transaction_date = response_data["Results"]["TransactionDate"]
-        available_balance = response_data["Results"]["AvailableBalance"]
-        approval_message = (
-            f"Your PayNow request of ${amount} to {proxyValue} is successful.\n"
-            f"Transaction Time: {transaction_time}\n"
-            f"Transaction Date: {transaction_date}\n"
-            f"Available Balance: {available_balance}"
-        )
+    if type == "Transfer":
+        response_data = response
+        if response_data["Success"]:
+            transaction_time = response_data["Results"]["TransactionTime"]
+            transaction_date = response_data["Results"]["TransactionDate"]
+            available_balance = response_data["Results"]["AvailableBalance"]
+            approval_message = (
+                f"Your PayNow request of ${amount} to {proxyValue} is successful.\n"
+                f"Transaction Time: {transaction_time}\n"
+                f"Transaction Date: {transaction_date}\n"
+                f"Available Balance: {available_balance}"
+            )
+        else:
+            error_msg = response_data["Results"]["ErrorMsg"]
+            approval_message = (
+                f"Your PayNow request of ${amount} to {proxyValue} is not approved.\n"
+                f"{error_msg}"
+            )
+        
+    #UEN
     else:
-        error_msg = response_data["Results"]["ErrorMsg"]
-        approval_message = (
-            f"Your PayNow request of ${amount} to {proxyValue} is not approved.\n"
-            f"{error_msg}"
-        )
-    
+        response_data = response
+        if response_data["Success"]:
+            ocbc_refno = response_data["Results"]["ocbcreferenceNo"]
+            transaction_refno = response_data["Results"]["TransactionReferenceNo"]
+            transaction_description = response_data["Results"]["TransactionReferenceNo"]
+            approval_message = (
+                f"Your PayNow request of ${amount} to {proxyValue} is successful.\n"
+                f"OCBC Reference Number: {ocbc_refno}\n"
+                f"Transaction Reference: {transaction_refno}\n"
+                f"Transaction Description: {transaction_description}\n"
+            )
     return approval_message
+
 
 def format_message(message, response):
     '''Returns the formatted message by replacing variables inside message with variables gotten from endpoints'''
