@@ -30,7 +30,6 @@ def get_session_id(userId):
     current_timestamp = str(int(time.time()))
     shortened_hash = generate_shortened_hash(userId+current_timestamp)
 
-    print(shortened_hash)
     return shortened_hash
 
 def get_access_token():
@@ -103,9 +102,6 @@ def send_message():
     logging.info("Agent: {}".format(agent))
 
     response = detect_intent_texts(agent, text, language_code)
-    print("##### RESPONSE FORM DIALOGFLOW")
-    print(response)
-    print("#####")
 
     dialogflowMessageRaw = response['queryResult']['responseMessages']
     intent_id = "unidentified"
@@ -114,11 +110,11 @@ def send_message():
     except:
         None
 
-    response_data = refractor_processRawDFMessage(dialogflowMessageRaw,intent_id)
+    response_data = processRawDFMessage(dialogflowMessageRaw,intent_id)
 
     return response_data
 
-def refractor_processRawDFMessage(raw_message,intent_id):
+def processRawDFMessage(raw_message,intent_id):
     response_data = {
         "message": "",
         "endpoint": "",
@@ -140,45 +136,10 @@ def refractor_processRawDFMessage(raw_message,intent_id):
             response_data["data"] = request_input
             response_data["message"] += message_var
         else:
-            # print("#THIS")
-            # print(process_message)
             response_data["message"] += process_message[1]
         idx+=1
-    print("####THIS####")
-    print(response_data)
     return response_data
 
-#The dialogflow response should follow this format:
-# /endpoint-message with {dynamic} variables-POST request in {"key":"Value"} format
-def processRawDFMessage(rawMessage):
-    messages = []
-    for messageData in rawMessage:
-        message = messageData['text']['text'][0]
-        processMessage = message.split('-')
-        print(processMessage)
-        if processMessage[0] != '' and processMessage[0][0] == '/':
-            endPoint = processMessage[0]
-            messageVar = processMessage[1]
-            print("processMessage[2]")
-            print(processMessage[2])
-            print(json.loads(processMessage[2]))
-            requestInput = processMessage[2]
-            url= os.getenv("HOST_URL")+endPoint
-            headers = {
-                'Content-Type': 'application/json',  # Example header
-                # Add more headers as needed
-            }
-            response = requests.request("POST", url , headers=headers, data=requestInput)
-            print(response)
-            #TODO: wtf is this
-            dict1 = json.loads(response.text)
-            for key in dict1:
-                token = "{"+key+"}"
-                messageVar = messageVar.replace(token,dict1[key])
-            processMessage[1] = messageVar
-
-        messages.append(processMessage[1])
-    return messages
 
 
 def detect_intent_texts(agent, text, language_code):

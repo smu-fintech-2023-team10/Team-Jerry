@@ -65,10 +65,7 @@ def get_message_reply():
     incoming_message = request.form.get('Body')
     media_url = request.form.get('MediaUrl0')
     if media_url != None:
-        print('media_url')
-        print(media_url)
         qrStringObj = parseQrToString(media_url)
-        print(qrStringObj)
         if(qrStringObj['success'] == True):
             qrString = qrStringObj['qrString']
             decoded = decode_paynow_qr(qrString) #QR object with payment info
@@ -87,7 +84,7 @@ def get_message_reply():
             "message": "ProxyType:" + decoded['Merchant Account Information']['Proxy Type'] + ', ProxyValue: ' + decoded['Merchant Account Information']['Proxy Value'],
             "userId": sender_phone_number
             }
-            print(decoded) #{'Reverse Domain Name': 'SG.PAYNOW', 'Proxy Type': 'MSIDN', 'Proxy Value': '+6597988922', 'Editable': '1'}
+            #print(decoded) #{'Reverse Domain Name': 'SG.PAYNOW', 'Proxy Type': 'MSIDN', 'Proxy Value': '+6597988922', 'Editable': '1'}
             url = os.getenv("HOST_URL") + "/runModel"
             response_data = requests.post(url, json=data)
             print(response_data)
@@ -105,10 +102,8 @@ def get_message_reply():
             "message": "Not QR Code",
             "userId": sender_phone_number
             }
-            print("This is not a QR Code")
             url = os.getenv("HOST_URL") + "/runModel"
             response_data = requests.post(url, json=data)
-            print(response_data)
             response = setup_ocbc_api_request(response_data)
             ##send to FB ##CONTINUE FROM HERE
             log = {'userID': sender_phone_number,
@@ -215,6 +210,7 @@ def setup_ocbc_api_request(res):
     def paynow():
         #Setup for Enquiry
         payloadData = json.loads(data)
+        print(payloadData)
         type = payloadData.get('type')
         amount = payloadData.get('transferAmount')
 
@@ -229,27 +225,19 @@ def setup_ocbc_api_request(res):
             nric = payloadData.get('nric') 
             proxyData = getProxy(phoneNumber, nric) 
 
-        setupData = {
-            "endpoint": "/paynowEnquiry",
-            "data": json.dumps(proxyData),
-            "message": "{isValid}"
+        url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
+        payload = {
+        "Amount": amount,
+        "ProxyType": proxyData["ProxyType"],
+        "ProxyValue": proxyData["ProxyValue"],
+        "FromAccountNo": accountNumber
         }
-        #Validated
-        paynowEnquire = setup_ocbc_api_request(setupData)
-        if paynowEnquire == "valid":
-            url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
-            payload = {
-            "Amount": amount,
-            "ProxyType": proxyData["ProxyType"],
-            "ProxyValue": proxyData["ProxyValue"],
-            "FromAccountNo": accountNumber
-            }
-            response = send_ocbc_api(url, "POST", payload)
-
+        response = send_ocbc_api(url, "POST", payload)
+        if response["Success"]:
             approvalMessage = format_paynow_response(response, amount, proxyData["ProxyValue"])
-        #Not Valid
         else:
             approvalMessage = f"Your PayNow request of ${amount} to {proxyData['ProxyValue']} is not approved. Please ensure you have entered a valid phone number or NRIC."
+        
         return {"approvalMessage": approvalMessage}
 
     def unableToFindReply():
@@ -267,7 +255,6 @@ def setup_ocbc_api_request(res):
         response_data = json.loads(res.text)
     else:
         response_data = res
-    # print(response_data)
     endpoint = response_data.get('endpoint')
     data = response_data.get('data')
     message = response_data.get('message')
@@ -365,7 +352,6 @@ def send_message(messageBody, recepientNumber, client):
     body=messageBody,
     to=recepientNumber
     )
-    # print(message.sid)
     return
 
 def storeUnstructedChatData(userId,dataStore):
