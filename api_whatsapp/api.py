@@ -72,10 +72,6 @@ def get_message_reply():
         if(qrStringObj['success'] == True):
             qrString = qrStringObj['qrString']
             decoded = decode_paynow_qr(qrString) #QR object with payment info
-            data = {
-            "message": "Start QR Flow",
-            "userId": sender_phone_number
-            }
             # {
             # 'Payload Format Indicator': '01', 
             # 'Point of Initiation Method': '11', 
@@ -87,12 +83,15 @@ def get_message_reply():
             # 'Merchant City': 'SINGAPORE', 
             # 'CRC': '7F54'
             # }
+            data = {
+            "message": "ProxyType:" + decoded['Merchant Account Information']['Proxy Type'] + ', ProxyValue: ' + decoded['Merchant Account Information']['Proxy Value'],
+            "userId": sender_phone_number
+            }
             print(decoded) #{'Reverse Domain Name': 'SG.PAYNOW', 'Proxy Type': 'MSIDN', 'Proxy Value': '+6597988922', 'Editable': '1'}
             url = os.getenv("HOST_URL") + "/runModel"
             response_data = requests.post(url, json=data)
             print(response_data)
             response = setup_ocbc_api_request(response_data)
-            ##send to FB ##CONTINUE FROM HERE
             log = {'userID': sender_phone_number,
                 'userMsg': incoming_message,
                 'intent': json.loads(response_data.text)['intent'],
@@ -138,7 +137,6 @@ def get_message_reply():
         
         # Log Data in firebase 
         storeUnstructedChatData(sender_phone_number,data_to_store)
-
 
         send_message(response, sender_phone_number, client)
         return "Success"
@@ -217,11 +215,20 @@ def setup_ocbc_api_request(res):
     def paynow():
         #Setup for Enquiry
         payloadData = json.loads(data)
+        type = payloadData.get('type')
         amount = payloadData.get('transferAmount')
-        phoneNumber = payloadData.get('phoneNumber')
-        accountNumber = payloadData.get('bankAccountNumber')
-        nric = payloadData.get('nric') 
-        proxyData = getProxy(phoneNumber, nric) ###need to handle UEN here if not personal. 
+
+        if type == "Scan":
+            proxyData = {
+                "ProxyType" : payloadData.get('ProxyType'),
+                "ProxyValue" : payloadData.get('ProxyValue')
+            }
+        elif type == "Transfer":
+            phoneNumber = payloadData.get('phoneNumber')
+            accountNumber = payloadData.get('bankAccountNumber')
+            nric = payloadData.get('nric') 
+            proxyData = getProxy(phoneNumber, nric) 
+
         setupData = {
             "endpoint": "/paynowEnquiry",
             "data": json.dumps(proxyData),

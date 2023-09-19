@@ -103,9 +103,9 @@ def send_message():
     logging.info("Agent: {}".format(agent))
 
     response = detect_intent_texts(agent, text, language_code)
-    # print("##### RESPONSE FORM DIALOGFLOW")
-    # print(response)
-    # print("#####")
+    print("##### RESPONSE FORM DIALOGFLOW")
+    print(response)
+    print("#####")
 
     dialogflowMessageRaw = response['queryResult']['responseMessages']
     intent_id = "unidentified"
@@ -144,6 +144,8 @@ def refractor_processRawDFMessage(raw_message,intent_id):
             # print(process_message)
             response_data["message"] += process_message[1]
         idx+=1
+    print("####THIS####")
+    print(response_data)
     return response_data
 
 #The dialogflow response should follow this format:
