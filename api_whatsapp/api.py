@@ -213,25 +213,48 @@ def setup_ocbc_api_request(res):
         print(payloadData)
         type = payloadData.get('type')
         amount = payloadData.get('transferAmount')
+        #NOTE: HARDCODED VALUE FOR NOW
+        accountNumber = payloadData.get('bankAccountNumber')
 
         if type == "Scan":
             proxyData = {
                 "ProxyType" : payloadData.get('ProxyType'),
                 "ProxyValue" : payloadData.get('ProxyValue')
             }
+
+            url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
+            payload = {
+                "Amount": amount,
+                "ProxyType": proxyData["ProxyType"],
+                "ProxyValue": proxyData["ProxyValue"],
+                "FromAccountNo": accountNumber
+            }
+
+            if proxyData["ProxyType"] == "UEN":
+                url = Constants.OCBC_URL + '/corporate/paynowpayment/1.0/corporatePayment'
+                payload = {
+                    "TransactionDescription": "Whatsapp Banking Transfer",
+                    "Amount": amount,
+                    "ProxyType": proxyData["ProxyType"],
+                    "ProxyValue": proxyData["ProxyValue"],
+                    "FromAccountNo": accountNumber,
+                    "PurposeCode": "OTHR",
+                    "TransactionReferenceNo": "OrgXYZ1212123"
+                }
+
         elif type == "Transfer":
             phoneNumber = payloadData.get('phoneNumber')
-            accountNumber = payloadData.get('bankAccountNumber')
             nric = payloadData.get('nric') 
             proxyData = getProxy(phoneNumber, nric) 
 
-        url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
-        payload = {
-        "Amount": amount,
-        "ProxyType": proxyData["ProxyType"],
-        "ProxyValue": proxyData["ProxyValue"],
-        "FromAccountNo": accountNumber
-        }
+            url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
+            payload = {
+            "Amount": amount,
+            "ProxyType": proxyData["ProxyType"],
+            "ProxyValue": proxyData["ProxyValue"],
+            "FromAccountNo": accountNumber
+            }
+
         response = send_ocbc_api(url, "POST", payload)
         if response["Success"]:
             approvalMessage = format_paynow_response(response, amount, proxyData["ProxyValue"])
