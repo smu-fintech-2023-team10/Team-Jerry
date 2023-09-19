@@ -353,7 +353,7 @@ def format_paynow_response(response, amount, proxyValue,type):
         if response_data["Success"]:
             ocbc_refno = response_data["Results"]["ocbcreferenceNo"]
             transaction_refno = response_data["Results"]["TransactionReferenceNo"]
-            transaction_description = response_data["Results"]["TransactionReferenceNo"]
+            transaction_description = response_data["Results"]["TransactionDescription"]
             approval_message = (
                 f"Your PayNow request of ${amount} to {proxyValue} is successful.\n"
                 f"OCBC Reference Number: {ocbc_refno}\n"
