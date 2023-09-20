@@ -215,7 +215,7 @@ def setup_ocbc_api_request(res):
         amount = payloadData.get('transferAmount')
         #NOTE: HARDCODED VALUE FOR NOW
         accountNumber = payloadData.get('bankAccountNumber')
-
+        formatType = "NORMALPAYNOW"
         if type == "Scan":
             proxyData = {
                 "ProxyType" : payloadData.get('ProxyType'),
@@ -231,6 +231,7 @@ def setup_ocbc_api_request(res):
             }
 
             if proxyData["ProxyType"] == "UEN":
+                formatType = "CORPORATEPAYNOW"
                 url = Constants.OCBC_URL + '/corporate/paynowpayment/1.0/corporatePayment'
                 payload = {
                     "TransactionDescription": "Whatsapp Banking Transfer",
@@ -257,7 +258,7 @@ def setup_ocbc_api_request(res):
 
         response = send_ocbc_api(url, "POST", payload)
         if response["Success"]:
-            approvalMessage = format_paynow_response(response, amount, proxyData["ProxyValue"],type)
+            approvalMessage = format_paynow_response(response, amount, proxyData["ProxyValue"],formatType)
         else:
             approvalMessage = f"Your PayNow request of ${amount} to {proxyData['ProxyValue']} is not approved. Please ensure you have entered a valid phone number/NRIC/UEN."
         
@@ -328,7 +329,7 @@ def getProxy(phoneNumber, nric):
 
 def format_paynow_response(response, amount, proxyValue,type):
     '''Returns the approval message for PayNow'''
-    if type == "Transfer":
+    if type == "NORMALPAYNOW":
         response_data = response
         if response_data["Success"]:
             transaction_time = response_data["Results"]["TransactionTime"]
@@ -347,7 +348,7 @@ def format_paynow_response(response, amount, proxyValue,type):
                 f"{error_msg}"
             )
         
-    #UEN
+    #formatType = "CORPORATEPAYNOW"
     else:
         response_data = response
         if response_data["Success"]:
