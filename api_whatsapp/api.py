@@ -95,8 +95,8 @@ def get_message_reply():
                 'intent': json.loads(response_data.text)['intent'],
                 'response':response}
             
-            print(log)
-            send_message(response, sender_phone_number, client)
+            dataStore = constructDataStore(sender_phone_number, data['message'], response_data, response)
+            send_message(response, sender_phone_number, client,dataStore)
             return "Success"
         else:
             data = {
@@ -111,8 +111,9 @@ def get_message_reply():
                 'userMsg': incoming_message,
                 'intent': json.loads(response_data.text)['intent'],
                 'response':response}
-            print(log)
-            send_message(response, sender_phone_number, client)
+            
+            dataStore = constructDataStore(sender_phone_number,incoming_message, response_data, response)
+            send_message(response, sender_phone_number, client,dataStore)
             return "Success"
     else:
         data = {
@@ -123,19 +124,9 @@ def get_message_reply():
         response_data = requests.post(url, json=data)
         print(response_data)
         response = setup_ocbc_api_request(response_data)
-               
 
-        data_to_store = {'userID': sender_phone_number,
-               'userMsg': incoming_message,
-               'intent': json.loads(response_data.text)['intent'],
-               'response':response,
-                }
-        
-        # Log Data in firebase 
-        data_to_store['sessionId'] = get_session_id(sender_phone_number)
-        storeUnstructedChatData(sender_phone_number,data_to_store)
-
-        send_message(response, sender_phone_number, client)
+        dataStore = constructDataStore(sender_phone_number, incoming_message, response_data, response)
+        send_message(response, sender_phone_number, client,dataStore)
         return "Success"
 
 # ======= END ROUTES =======
@@ -388,14 +379,28 @@ def generate_reply(message):
     return routes.get(message, "/unableToFindReply")
 
 
-def send_message(messageBody, recepientNumber, client):
+def send_message(messageBody, recepientNumber, client, dataStore):
     '''Sends a message to the user'''
+
+    #Logging
+    storeUnstructedChatData(recepientNumber, dataStore)
+
     message = client.messages.create(
     from_='whatsapp:+14155238886',
     body=messageBody,
     to=recepientNumber
     )
     return
+
+def constructDataStore(sender_phone_number, message, response_data, response):
+    dataStore = {'userID': sender_phone_number,
+               'userMsg': message,
+               'intent': json.loads(response_data.text)['intent'],
+               'response':response,
+            }
+    dataStore['sessionId'] = get_session_id(sender_phone_number)
+
+    return dataStore
 
 def storeUnstructedChatData(userId,dataStore):
     # Specify the key/id you want to use
