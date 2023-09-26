@@ -184,11 +184,14 @@ def render_page(pathname):
                         withBorder=True,
                         shadow='xs',
                         p='sm',
-                        children=[html.H3("<Popular Topics to be Placed Here>"),
-                                html.Div([
-                                        html.Div(id='popular_topic_list')
-                                        ])]
-                    ), style={'marginLeft': '1rem', 'width': '34%', 'display': 'inline'}
+                        children=[
+                            html.Div([
+                            html.H2("Popular Topics"),
+                            html.Div([
+                                    html.Div(id='popular_topic_list')
+                                    ], style={'margin-top': '1rem'})
+                            ], style={'padding':'1rem', 'height':'528px'})
+            ]), style={'marginLeft': '1rem', 'width': '34%', 'display': 'flex-wrap'}
                 ), # Popular Topics
             ], style={'display': 'flex'}), # for Metrics and Popular Topics
             html.Div([
@@ -290,7 +293,6 @@ def render_page(pathname):
 
 # Rendering Overview Page Components
 
-
 @app.callback(
     [Output(component_id='bank-function-distribution-fig', component_property='figure'), Output(component_id='sentiment-distribution-fig', component_property='figure'), Output(component_id='overview-metrics-fig', component_property='figure'), Output(component_id='overview-datatable', component_property='children'), Output(component_id='popular_topic_list', component_property='children')],
     [Input("url", "pathname"), Input(component_id='overview-metric-dropdown', component_property='value')]
@@ -381,8 +383,8 @@ def render_overview_page(pathname, metric_choice):
         trigram_words = (trigram_ranking.sort_values('rank', ascending=False))
         for x in trigram_words['term'].head(5):
             if 'do' not in x:
-                popular_topic_list.append(x)
-        popular_topic_list_items = [html.Li(item) for item in popular_topic_list]
+                popular_topic_list.append("'" + x + "'")
+        popular_topic_list_items = [html.Li(html.H1(dbc.Badge(item, color="white", text_color="dark", className="border border-dark border-2 me-1"))) for item in popular_topic_list]
 
         sentiment_distribution_fig = px.pie(
             sentiment_distribution,
