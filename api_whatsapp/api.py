@@ -23,6 +23,7 @@ from .components.parseQrImageToString import parseQrToString
 # Internal imports
 import Constants
 from api_firestore import create_app, db_reference
+from api_dialogflow.api import get_session_id
 
 # ======= SETUP =======
 
@@ -92,7 +93,7 @@ def get_message_reply():
             log = {'userID': sender_phone_number,
                 'userMsg': incoming_message,
                 'intent': json.loads(response_data.text)['intent'],
-                'reponse':response}
+                'response':response}
             
             print(log)
             send_message(response, sender_phone_number, client)
@@ -109,7 +110,7 @@ def get_message_reply():
             log = {'userID': sender_phone_number,
                 'userMsg': incoming_message,
                 'intent': json.loads(response_data.text)['intent'],
-                'reponse':response}
+                'response':response}
             print(log)
             send_message(response, sender_phone_number, client)
             return "Success"
@@ -127,10 +128,11 @@ def get_message_reply():
         data_to_store = {'userID': sender_phone_number,
                'userMsg': incoming_message,
                'intent': json.loads(response_data.text)['intent'],
-               'reponse':response,
+               'response':response,
                 }
         
         # Log Data in firebase 
+        data_to_store['sessionId'] = get_session_id(sender_phone_number)
         storeUnstructedChatData(sender_phone_number,data_to_store)
 
         send_message(response, sender_phone_number, client)
