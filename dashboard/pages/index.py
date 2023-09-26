@@ -101,6 +101,11 @@ def datatable(df):
             {
                 'if': {'row_index': 'odd'},
                 'backgroundColor': 'rgb(230, 230, 230)',
+            },
+            {
+                "if": {"state": "selected"},
+                "backgroundColor": "inherit !important",
+                "border": "inherit !important",
             }
         ],
         style_header={
@@ -220,7 +225,7 @@ def render_page(pathname):
                     p='sm',
                     children=[
                         html.Div([html.Div(html.H2("Unrecognized Messages")),
-                        html.Div(id="overview-datatable", style={'margin-top': '1rem'})],style={'padding':'1rem'})
+                        html.Div(id="overview-datatable", style={'margin-top': '1rem'})], style={'padding':'1rem'})
                         ]), style={'margin-top': '1rem', 'width': '100%', 'display': 'inline-block'}
             ), # for Datatable of Unrecognised Messages
         ])
