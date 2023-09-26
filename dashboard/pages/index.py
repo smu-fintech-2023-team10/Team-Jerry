@@ -3,6 +3,7 @@ import dash_table
 import dash_bootstrap_components as dbc
 from dash import html
 from dash import dcc
+import dash_daq as daq
 import dash_mantine_components as dmc
 import plotly.express as px
 import pandas as pd
@@ -124,12 +125,16 @@ def get_metric_df(df, metric_choice, bf):
 
     if metric_choice == "Users":
         df = sorted_df.groupby(["date"])['account_number'].nunique(
-        ).reset_index(name=bf + " user count")
+        ).reset_index(name=bf)
 
     elif metric_choice == "Sessions":
         df = sorted_df.groupby(["date"]).size().reset_index(
-            name=bf + " session count")
+            name=bf)
     return df
+
+# Function to generate User Ratings
+def get_average_rating(df):
+    return round(df['session_rating'].mean(),3)
 
 
 # Set Overall Page Layout
@@ -172,7 +177,7 @@ def render_page(pathname):
                                                   value="Users"
                                                   ), style={'width': '80%', 'display': 'inline'}
                                      ),
-                        ], style={'display': 'flex', 'padding':'1rem'}),
+                        ], style={'display': 'flex', 'padding':'1rem', 'padding-bottom':'0px'}),
                             dcc.Graph(id="overview-metrics-fig",
                                       figure={}
                                       )
@@ -190,7 +195,7 @@ def render_page(pathname):
                             html.Div([
                                     html.Div(id='popular_topic_list')
                                     ], style={'margin-top': '1rem'})
-                            ], style={'padding':'1rem', 'height':'528px'})
+                            ], style={'padding':'1rem', 'height':'512px'})
             ]), style={'marginLeft': '1rem', 'width': '34%', 'display': 'flex-wrap'}
                 ), # Popular Topics
             ], style={'display': 'flex'}), # for Metrics and Popular Topics
@@ -259,7 +264,7 @@ def render_page(pathname):
                                                   value="Users"
                                                   ), style={'width': '80%', 'display': 'inline'}
                                      ),
-                        ], style={'display': 'flex', 'padding':'1rem'}),
+                        ], style={'display': 'flex', 'padding':'1rem', 'padding-bottom':'0px'}),
                             dcc.Graph(id="business-function-graph",
                                       figure={}
                                       )]
@@ -271,7 +276,19 @@ def render_page(pathname):
                         withBorder=True,
                         shadow='xs',
                         p='sm',
-                        children=[html.H3("<User Ratings to be Placed Here>")]
+                        children=[
+                        html.Div([
+                        html.H3("User Ratings"),
+                        daq.Gauge(
+                        id='business-function-rating',
+                        value=3,
+                        showCurrentValue=True,
+                        label='Avg. User Rating',
+                        max=5,
+                        min=0,
+                        )
+                        ], style={'padding':'1rem', 'height':'512px'})
+                        ]
                     ), style={'marginLeft': '1rem', 'width': '34%', 'display': 'inline'}
                 )
             ], style={'display': 'flex'}),
@@ -384,7 +401,7 @@ def render_overview_page(pathname, metric_choice):
         for x in trigram_words['term'].head(5):
             if 'do' not in x:
                 popular_topic_list.append("'" + x + "'")
-        popular_topic_list_items = [html.Li(html.H1(dbc.Badge(item, color="white", text_color="dark", className="border border-dark border-2 me-1"))) for item in popular_topic_list]
+        popular_topic_list_items = [html.Li(html.H3(dbc.Badge(item, color="white", text_color="info", className="border border-info border-2 me-1"))) for item in popular_topic_list]
 
         sentiment_distribution_fig = px.pie(
             sentiment_distribution,
@@ -402,10 +419,10 @@ def render_overview_page(pathname, metric_choice):
             sentiment_df.drop("sentiment_label_score", axis=1))
 
         # generate user metrics table
-        bf_csv = {"check balance": check_balance_df,
-                  "paynow transfer": paynow_transfer_df, "scan to pay": scan_to_pay_df}
-        bf_colour = {'check balance': '#92C0D8',
-                     'paynow transfer': '#FDCA8C', 'scan to pay': '#9DD4A3'}
+        bf_csv = {"Check Balance": check_balance_df,
+                  "Paynow Transfer": paynow_transfer_df, "Scan To Pay": scan_to_pay_df}
+        bf_colour = {'Check Balance': '#D252A7',
+                     'Paynow transfer': '#017EFA', 'Scan To Pay': '#9DD4A3'}
 
         final_df = pd.DataFrame({"date": []})
         for bf in bf_csv:
@@ -414,10 +431,10 @@ def render_overview_page(pathname, metric_choice):
             final_df = pd.merge(final_df, dff, on='date', how='outer')
 
         overview_user_metrics_fig = px.line(final_df, x='date', y=final_df.columns,
-                                            color_discrete_map=bf_colour, title="Number of {} over time".format(metric_choice))
+                                            color_discrete_map=bf_colour)
         overview_user_metrics_fig.update_layout(
-            yaxis_title='{} count'.format(metric_choice))
-        overview_user_metrics_fig.update_traces(line={'width': 2})
+            yaxis_title='Daily {}'.format(metric_choice))
+        overview_user_metrics_fig.update_traces(line={'width': 3})
         overview_user_metrics_fig.update_xaxes(rangeslider_visible=True)
 
         return bank_function_distribution_fig, sentiment_distribution_fig, overview_user_metrics_fig, sentiment_datatable, html.Ul(popular_topic_list_items)
@@ -430,7 +447,7 @@ def render_overview_page(pathname, metric_choice):
 
 @app.callback(
     [Output(component_id='business-function-graph', component_property='figure'),
-     Output(component_id='datatable', component_property='children')],
+     Output(component_id='datatable', component_property='children'),Output(component_id='business-function-rating', component_property='value')],
     [Input("url", "pathname"), Input(
         component_id='metric-dropdown', component_property='value')]
 )
@@ -442,26 +459,33 @@ def render_business_function_pages(pathname, metric_choice):
         if pathname == "/check-balance":
             bf = "Check Balance"
             df = check_balance_df
+            avg_rating = get_average_rating(df)
+
 
         if pathname == "/paynow-transfer":
             bf = "Paynow Transfer"
             df = paynow_transfer_df
+            avg_rating = get_average_rating(df)
 
         if pathname == "/scan-to-pay":
             bf = "Scan To Pay"
             df = scan_to_pay_df
+            avg_rating = get_average_rating(df)
 
         # generate user metric table
         dff = get_metric_df(df, metric_choice, bf)
-        y_axis = "{} {} count".format(bf, metric_choice.lower()[:-1])
-        fig = px.line(dff, x="date", y=y_axis,
-                      title="Number of {} Over Time".format(metric_choice))
+        y_axis = "{}".format(bf)
+        y_axis_string = "Daily {} {}".format(bf, metric_choice)
+        fig = px.line(dff, x="date", y=y_axis)
         fig.update_xaxes(rangeslider_visible=True)
+
+        # generate user rating chart
+        
 
         # generate datable
         user_table = datatable(df)
 
-        return fig, user_table
+        return fig, user_table, avg_rating
 
 
 if __name__ == '__main__':
