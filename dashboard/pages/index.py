@@ -18,6 +18,12 @@ from dash.exceptions import PreventUpdate
 import json
 
 
+# big query connector
+import pandas_gbq
+from google.oauth2 import service_account
+import pandas as pd
+
+
 app = dash.Dash(__name__, external_stylesheets=[
                 dbc.themes.LUMEN], suppress_callback_exceptions=True)
 
@@ -77,10 +83,39 @@ top_bar = html.Div(
     style={"background-color": "#ffffff", },
 )
 
-# Import Datasets
-check_balance_df = pd.read_csv('../csv/check_balance.csv')
-paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
-scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
+# # Import Datasets
+# check_balance_df = pd.read_csv('../csv/check_balance.csv')
+# paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
+# scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
+
+## big query connector
+credentials = service_account.Credentials.from_service_account_file('smu-fyp-396613-6aefbba11d63.json')
+project_id = 'smu-fyp-396613'
+
+check_balances_df_sql = f"""
+SELECT *
+FROM smufyp.check_balance_sessions
+"""
+
+paynow_transfer_df_sql = f"""
+SELECT *
+FROM smufyp.paynow_transfer_sessions
+"""
+
+scan_to_pay_df_sql = f"""
+SELECT *
+FROM smufyp.scan_to_pay_sessions
+"""
+
+overview_df_sql = f"""
+SELECT *
+FROM smufyp.unrecognized_messages
+"""
+
+check_balance_df = pd.read_gbq(check_balances_df_sql, project_id=project_id, dialect='standard', credentials=credentials)
+paynow_transfer_df = pd.read_gbq(paynow_transfer_df_sql, project_id=project_id, dialect='standard', credentials=credentials)
+scan_to_pay_df = pd.read_gbq(scan_to_pay_df_sql, project_id=project_id, dialect='standard', credentials=credentials)
+overview_df = pd.read_gbq(overview_df_sql, project_id=project_id, dialect='standard', credentials=credentials)
 
 # Function to generate Data Tables
 def datatable(df):
@@ -120,7 +155,7 @@ def datatable(df):
 # Function to generate User Metrics Chart
 
 def get_metric_df(df, metric_choice, bf):
-    df['date'] = pd.to_datetime(df['date'], format="%d/%m/%y")
+    df['date'] = pd.to_datetime(df['date'], format="%d/%M/%y")
     sorted_df = df.sort_values(by="date")
 
     if metric_choice == "Users":
@@ -317,6 +352,10 @@ def render_page(pathname):
 def render_overview_page(pathname, metric_choice):
 
     if pathname == "/":
+        ## Import Datasets
+        check_balance_df = pd.read_csv('../csv/check_balance.csv')
+        paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
+        scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
 
         # generate bank function distribution chart
         combined_df = pd.concat(
