@@ -352,10 +352,10 @@ def render_page(pathname):
 def render_overview_page(pathname, metric_choice):
 
     if pathname == "/":
-        ## Import Datasets
-        check_balance_df = pd.read_csv('../csv/check_balance.csv')
-        paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
-        scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
+        # ## Import Datasets
+        # check_balance_df = pd.read_csv('../csv/check_balance.csv')
+        # paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
+        # scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
 
         # generate bank function distribution chart
         combined_df = pd.concat(
