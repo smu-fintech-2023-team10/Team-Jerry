@@ -11,3 +11,5 @@ HEADERS =  {
     }
 
 OCBC_URL = "https://api.ocbc.com:8243/transactional"
+MESSAGES=[{"role": "system", "content": "You are an OCBC support assistant. Only answer questions related to OCBC. If the question is 'Stop' or 'End' , return 'False' without any other texts or punctuations. Word limit is 1600 characters."}]
+OPENAIENGAGED = False

@@ -12,8 +12,7 @@ from dotenv import load_dotenv
 from api_firestore.__init__ import register_firebaseMS
 from api_whatsapp.__init__ import register_whatsappMS
 from api_dialogflow.__init__ import register_dialogflowMS
-
-
+from api_openai.__init__ import register_openaiMS
 
 app = Flask(__name__)
 app.config['DEBUG'] = True
@@ -26,6 +25,7 @@ if __name__ == '__main__':
     app = register_firebaseMS(app)
     app = register_dialogflowMS(app)
     app = register_whatsappMS(app)
+    app = register_openaiMS(app)
 
     # app.run()  # adjust host and port as needed
     app.run(host='0.0.0.0', port=5000)
