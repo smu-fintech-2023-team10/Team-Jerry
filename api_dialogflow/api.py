@@ -17,6 +17,8 @@ dialogflowMS = Blueprint('dialogflowMS', __name__)
 
 ## TODO ADD THIS VAIRABLE TO DB
 userSession = {}
+LoggedOut = False
+
 
 
 # ---- Helper functions #
@@ -25,13 +27,29 @@ def generate_shortened_hash(input_string):
     shortened_hash = md5_hash.hexdigest()[:7]
     return shortened_hash
 
-def get_session_id(userId):
-    #generate a random session id based on md5 hash of current time concat 7 
+def create_session_key(userId):
     current_timestamp = str(int(time.time()))
     shortened_hash = generate_shortened_hash(userId+current_timestamp)
-
-    print(shortened_hash)
     return shortened_hash
+
+def get_session_id(userId):
+    if userId in userSession:
+        session_id = userSession[userId][0]
+        create_time = userSession[userId][1]
+
+        if int(time.time()) - create_time >= 30*60: ## check if more then 30 min else create new one
+            session_id = create_session_key(userId)
+            user_sessionData = [session_id,int(time.time())]
+            userSession[userId] = user_sessionData
+        else: ## update time
+            userSession[userId][1] = int(time.time())
+    else: # new user
+        session_id = create_session_key(userId)
+        user_sessionData = [session_id,int(time.time()), LoggedOut]
+        userSession[userId] = user_sessionData
+    print("####userID")
+    print(userSession)
+    return session_id
 
 def get_access_token():
     SERVICE_ACCOUNT_FILE = 'api_dialogflow/gcloud.json'
@@ -87,9 +105,7 @@ def send_message():
 
     ## GEN SESS according to user ID TODO Dyanmic timeout session
     # userId = '84820352' #tmp
-    if userId not in userSession:
-        userSession[userId] = get_session_id(userId)
-    session_id = userSession[userId]
+    session_id = get_session_id(userId)
         
     project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
     location_id = os.getenv("DIALOGFLOW_LOCATION_ID")
@@ -103,75 +119,53 @@ def send_message():
     logging.info("Agent: {}".format(agent))
 
     response = detect_intent_texts(agent, text, language_code)
-    print("##### RESPONSE FORM DIALOGFLOW")
-    print(response)
-    print("#####")
 
     dialogflowMessageRaw = response['queryResult']['responseMessages']
-    # processedText = processRawDFMessage(dialogflowMessageRaw)
-    # print(response)
-    # return processedText
-    response_data = refractor_processRawDFMessage(dialogflowMessageRaw)
+    intent_id = "unidentified"
+    try:
+        intent_id = response['queryResult']['intent']['displayName']
+    except:
+        None
+
+    response_data = processRawDFMessage(dialogflowMessageRaw,intent_id, userId)
+
     return response_data
 
-def refractor_processRawDFMessage(raw_message):
+def processRawDFMessage(raw_message,intent_id,userId):
+    print("###THIS")
+    print(raw_message)
     response_data = {
         "message": "",
         "endpoint": "",
-        "data": ""
+        "data": "",
+        "intent":intent_id
     }
     idx = 0
     for message_data in raw_message:
-        message = message_data['text']['text'][0]
-        process_message = message.split('-')
-        if idx > 0:
-            response_data["message"] += "\n\n"
-        if process_message[0] != '' and process_message[0][0] == '/':
-            endpoint = process_message[0]
-            message_var = process_message[1]
-            request_input = process_message[2]
-            
-            response_data["endpoint"] = endpoint
-            response_data["data"] = request_input
-            response_data["message"] += message_var
-        else:
-            print("#THIS")
-            print(process_message)
-            response_data["message"] += process_message[1]
-        idx+=1
+        print("###THIS222222")
+        print(message_data)
+        try:
+            message = message_data['text']['text'][0]
+            process_message = message.split('-')
+            if idx > 0:
+                response_data["message"] += "\n\n"
+            if process_message[0] != '' and process_message[0][0] == '/':
+                endpoint = process_message[0]
+                message_var = process_message[1]
+                request_input = process_message[2]
+                
+                response_data["endpoint"] = endpoint
+                response_data["data"] = request_input
+                response_data["message"] += message_var
+            else:
+                response_data["message"] += process_message[1]
+            idx+=1
+        except Exception as e:
+            print("Session Ended")
+            response_data["message"] += "\nYou have been logged out. Thank you!\nEnter 'start'/'hi' to start the chatbot"
+            del userSession[userId]  # User end session, remove session for user
     return response_data
 
-#The dialogflow response should follow this format:
-# /endpoint-message with {dynamic} variables-POST request in {"key":"Value"} format
-def processRawDFMessage(rawMessage):
-    messages = []
-    for messageData in rawMessage:
-        message = messageData['text']['text'][0]
-        processMessage = message.split('-')
-        print(processMessage)
-        if processMessage[0] != '' and processMessage[0][0] == '/':
-            endPoint = processMessage[0]
-            messageVar = processMessage[1]
-            print("processMessage[2]")
-            print(processMessage[2])
-            print(json.loads(processMessage[2]))
-            requestInput = processMessage[2]
-            url= os.getenv("HOST_URL")+endPoint
-            headers = {
-                'Content-Type': 'application/json',  # Example header
-                # Add more headers as needed
-            }
-            response = requests.request("POST", url , headers=headers, data=requestInput)
-            print(response)
-            #TODO: wtf is this
-            dict1 = json.loads(response.text)
-            for key in dict1:
-                token = "{"+key+"}"
-                messageVar = messageVar.replace(token,dict1[key])
-            processMessage[1] = messageVar
-
-        messages.append(processMessage[1])
-    return messages
 
 
 def detect_intent_texts(agent, text, language_code):
