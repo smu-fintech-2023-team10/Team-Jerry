@@ -135,7 +135,7 @@ def processRawDFMessage(raw_message,intent_id,userId):
     print(raw_message)
     response_data = {
         "message": "",
-        "response_data": "",
+        "endpoint": "",
         "data": "",
         "intent":intent_id
     }

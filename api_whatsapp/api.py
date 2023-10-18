@@ -124,30 +124,19 @@ def get_message_reply():
             print(Constants.OPENAIENGAGED)
             url = os.getenv("HOST_URL") + "/runModel"
             response_data = requests.post(url, json=data)
-            try:
-                res = json.loads(response_data.text)
-                if res["endpoint"] == "/callChatGPT":
-                    Constants.OPENAIENGAGED = True
-                    response = setup_ocbc_api_request(response_data)
-                    dataStore = constructDataStore(sender_phone_number, incoming_message, response_data, response)
-                    send_message(response, sender_phone_number, client,dataStore)
-                else:
-                    print(Constants.OPENAIENGAGED)
-                    response = setup_ocbc_api_request(response_data)
-                    dataStore = constructDataStore(sender_phone_number, incoming_message, response_data, response)
-                    send_message(response, sender_phone_number, client,dataStore)
-            except:
-                print(Constants.OPENAIENGAGED)
-                response = setup_ocbc_api_request(response_data)
-                dataStore = constructDataStore(sender_phone_number, incoming_message, response_data, response)
-                send_message(response, sender_phone_number, client,dataStore)
+            res = json.loads(response_data.text)
+            if res["endpoint"] == "/callChatGPT":
+                Constants.OPENAIENGAGED = True
+            response = setup_ocbc_api_request(response_data)
+            dataStore = constructDataStore(sender_phone_number, incoming_message, response_data, response)
+            send_message(response, sender_phone_number, client,dataStore)
         else:
             print(Constants.OPENAIENGAGED)
             url = os.getenv("HOST_URL") + "/callChatGPT"
-            response = requests.post(url, json=data)
-            print(response.text)
-            dataStore = constructDataStore(sender_phone_number, incoming_message, "GPT", response.text)
-            send_message(response.text, sender_phone_number, client,dataStore)
+            response4 = requests.post(url, json=data)
+            print(response4.text)
+            dataStore = constructDataStore(sender_phone_number, incoming_message, "GPT", response4.text)
+            send_message(response4.text, sender_phone_number, client,dataStore)
         return "Success"
 
 # ======= END ROUTES =======
