@@ -20,6 +20,7 @@ from dotenv import load_dotenv
 from .components.qrDecoder import decode_paynow_qr
 from .components.parseQrImageToString import parseQrToString
 
+
 # Internal imports
 import Constants
 from api_firestore import create_app, db_reference
@@ -30,7 +31,6 @@ from api_dialogflow.api import get_session_id
 load_dotenv()
 root_ref = db_reference
 whatsappMS = Blueprint('whatsappMS', __name__)
-
 # ======= END SETUP =======
 
 # ======= ROUTES =======
@@ -105,13 +105,13 @@ def get_message_reply():
             }
             url = os.getenv("HOST_URL") + "/runModel"
             response_data = requests.post(url, json=data)
+            
             response = setup_ocbc_api_request(response_data)
             ##send to FB ##CONTINUE FROM HERE
             log = {'userID': sender_phone_number,
                 'userMsg': incoming_message,
                 'intent': json.loads(response_data.text)['intent'],
                 'response':response}
-            
             dataStore = constructDataStore(sender_phone_number,incoming_message, response_data, response)
             send_message(response, sender_phone_number, client,dataStore)
             return "Success"
@@ -120,13 +120,34 @@ def get_message_reply():
             "message": incoming_message,
             "userId": sender_phone_number
         }
-        url = os.getenv("HOST_URL") + "/runModel"
-        response_data = requests.post(url, json=data)
-        print(response_data)
-        response = setup_ocbc_api_request(response_data)
-
-        dataStore = constructDataStore(sender_phone_number, incoming_message, response_data, response)
-        send_message(response, sender_phone_number, client,dataStore)
+        if Constants.OPENAIENGAGED == False:
+            print(Constants.OPENAIENGAGED)
+            url = os.getenv("HOST_URL") + "/runModel"
+            response_data = requests.post(url, json=data)
+            try:
+                res = json.loads(response_data.text)
+                if res["endpoint"] == "/callChatGPT":
+                    Constants.OPENAIENGAGED = True
+                    response = setup_ocbc_api_request(response_data)
+                    dataStore = constructDataStore(sender_phone_number, incoming_message, response_data, response)
+                    send_message(response, sender_phone_number, client,dataStore)
+                else:
+                    print(Constants.OPENAIENGAGED)
+                    response = setup_ocbc_api_request(response_data)
+                    dataStore = constructDataStore(sender_phone_number, incoming_message, response_data, response)
+                    send_message(response, sender_phone_number, client,dataStore)
+            except:
+                print(Constants.OPENAIENGAGED)
+                response = setup_ocbc_api_request(response_data)
+                dataStore = constructDataStore(sender_phone_number, incoming_message, response_data, response)
+                send_message(response, sender_phone_number, client,dataStore)
+        else:
+            print(Constants.OPENAIENGAGED)
+            url = os.getenv("HOST_URL") + "/callChatGPT"
+            response = requests.post(url, json=data)
+            print(response.text)
+            dataStore = constructDataStore(sender_phone_number, incoming_message, "GPT", response.text)
+            send_message(response.text, sender_phone_number, client,dataStore)
         return "Success"
 
 # ======= END ROUTES =======
@@ -256,7 +277,6 @@ def setup_ocbc_api_request(res):
             approvalMessage = f"Your PayNow request of ${amount} to {proxyData['ProxyValue']} is not approved. Please ensure you have entered a valid phone number/NRIC/UEN."
         
         return {"approvalMessage": approvalMessage}
-
     def unableToFindReply():
         #Default no reply
         phone_number = data.get('phoneNumber')
@@ -283,7 +303,7 @@ def setup_ocbc_api_request(res):
         "/last6MonthsActivity": last6MonthsActivity,
         "/paynowEnquiry": paynowEnquiry,
         "/paynow": paynow,
-        "/unableToFindReply": unableToFindReply
+        "/unableToFindReply": unableToFindReply,
     }
 
     func = switch.get(endpoint, default_response)
@@ -393,6 +413,13 @@ def send_message(messageBody, recepientNumber, client, dataStore):
     return
 
 def constructDataStore(sender_phone_number, message, response_data, response):
+    if response_data == "GPT":
+        dataStore = {'userID': sender_phone_number,
+               'userMsg': message,
+               'intent': "GPT",
+               'response':response,
+            }
+        return dataStore
     dataStore = {'userID': sender_phone_number,
                'userMsg': message,
                'intent': json.loads(response_data.text)['intent'],

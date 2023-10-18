@@ -9,7 +9,6 @@ import json
 import google.auth
 from google.oauth2 import service_account
 import google.auth.transport.requests
-
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
@@ -136,7 +135,7 @@ def processRawDFMessage(raw_message,intent_id,userId):
     print(raw_message)
     response_data = {
         "message": "",
-        "endpoint": "",
+        "response_data": "",
         "data": "",
         "intent":intent_id
     }
