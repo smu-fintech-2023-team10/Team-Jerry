@@ -203,4 +203,3 @@ def detect_intent_texts(agent, text, language_code):
 
     return response.json()  # return the response in case it's needed in future
 
-
