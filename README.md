@@ -27,7 +27,7 @@ e.g. https://f0fb-118-200-109-192.ngrok.io/getReply
 ![Alt text](images/TwilioConsole-1.png)
 
 **Twilio Account:**
-- Username: ocbcwhatsappbanking@gmail.com
+- Username: smufypteam10jerry@gmail.com
 - Password: Gljr4231@Leefamily22
 
 **Join the Twilio sandbox to test on own phone**
