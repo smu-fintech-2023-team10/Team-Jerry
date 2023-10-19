@@ -1,5 +1,6 @@
-.env
+./.env
 gcloud.json
 __pycache__/
 flask_session/
 api_firestore/__pycache__/
+.env

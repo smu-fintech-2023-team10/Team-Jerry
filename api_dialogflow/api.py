@@ -1,5 +1,4 @@
 from flask import Flask, request, Blueprint
-import hashlib
 import time 
 import requests 
 import os
@@ -12,43 +11,9 @@ import google.auth.transport.requests
 load_dotenv()
 logging.basicConfig(level=logging.INFO)
 
+#Internal imports
+import Constants
 dialogflowMS = Blueprint('dialogflowMS', __name__)
-
-## TODO ADD THIS VAIRABLE TO DB
-userSession = {}
-LoggedOut = False
-
-
-
-# ---- Helper functions #
-def generate_shortened_hash(input_string):
-    md5_hash = hashlib.md5(input_string.encode())
-    shortened_hash = md5_hash.hexdigest()[:7]
-    return shortened_hash
-
-def create_session_key(userId):
-    current_timestamp = str(int(time.time()))
-    shortened_hash = generate_shortened_hash(userId+current_timestamp)
-    return shortened_hash
-
-def get_session_id(userId):
-    if userId in userSession:
-        session_id = userSession[userId][0]
-        create_time = userSession[userId][1]
-
-        if int(time.time()) - create_time >= 30*60: ## check if more then 30 min else create new one
-            session_id = create_session_key(userId)
-            user_sessionData = [session_id,int(time.time())]
-            userSession[userId] = user_sessionData
-        else: ## update time
-            userSession[userId][1] = int(time.time())
-    else: # new user
-        session_id = create_session_key(userId)
-        user_sessionData = [session_id,int(time.time()), LoggedOut]
-        userSession[userId] = user_sessionData
-    print("####userID")
-    print(userSession)
-    return session_id
 
 def get_access_token():
     SERVICE_ACCOUNT_FILE = 'api_dialogflow/gcloud.json'
@@ -97,20 +62,15 @@ def get_access_token():
 
 # ---- Routes #
 @dialogflowMS.route("/runModel", methods=["POST"])
-def send_message():
+def send_message_dialogflow():
     data = request.json  # Get the JSON data from the request body
     text = data.get('message')
     userId = data.get('userId')
-
-    ## GEN SESS according to user ID TODO Dyanmic timeout session
-    # userId = '84820352' #tmp
-    session_id = get_session_id(userId)
-        
+    session_id = data.get('sessionId')
     project_id = os.getenv("DIALOGFLOW_PROJECT_ID")
     location_id = os.getenv("DIALOGFLOW_LOCATION_ID")
     agent_id = os.getenv("DIALOGFLOW_AGENT_ID")
 
-    logging.info("Session ID: {}".format(session_id))
     agent = f'projects/{project_id}/locations/{location_id}/agents/{agent_id}/sessions/{session_id}'
 
     language_code = "en-US"
@@ -131,18 +91,16 @@ def send_message():
     return response_data
 
 def processRawDFMessage(raw_message,intent_id,userId):
-    print("###THIS")
-    print(raw_message)
+    print("RAW MESSAGE:",raw_message)
     response_data = {
         "message": "",
         "endpoint": "",
         "data": "",
-        "intent":intent_id
+        "intent":intent_id,
     }
     idx = 0
     for message_data in raw_message:
-        print("###THIS222222")
-        print(message_data)
+        print("MESSAGE DATA:", message_data)
         try:
             message = message_data['text']['text'][0]
             process_message = message.split('-')
@@ -162,7 +120,7 @@ def processRawDFMessage(raw_message,intent_id,userId):
         except Exception as e:
             print("Session Ended")
             response_data["message"] += "\nYou have been logged out. Thank you!\nEnter 'start'/'hi' to start the chatbot"
-            del userSession[userId]  # User end session, remove session for user
+            del Constants.USER_SESSION[userId]  # User end session, remove session for user
     return response_data
 
 

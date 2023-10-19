@@ -4,8 +4,10 @@ from datetime import datetime, timedelta
 import firebase_admin
 import json
 import os
+import hashlib
 import requests
 import time
+import logging
 from firebase_admin import credentials, db, firestore
 from flask import Flask, request, Blueprint
 from flask_ngrok import run_with_ngrok
@@ -24,7 +26,6 @@ from .components.parseQrImageToString import parseQrToString
 # Internal imports
 import Constants
 from api_firestore import create_app, db_reference
-from api_dialogflow.api import get_session_id
 
 # ======= SETUP =======
 
@@ -65,6 +66,10 @@ def get_message_reply():
     sender_phone_number = request.form.get('From')
     incoming_message = request.form.get('Body')
     media_url = request.form.get('MediaUrl0')
+    ## GEN SESS according to user ID TODO Dyanmic timeout session
+    # userId = '84820352' #tmp
+    session_id = get_session_id(sender_phone_number)
+    logging.info("Session ID: {}".format(session_id))
     if media_url != None:
         qrStringObj = parseQrToString(media_url)
         if(qrStringObj['success'] == True):
@@ -83,7 +88,8 @@ def get_message_reply():
             # }
             data = {
             "message": "ProxyType:" + decoded['Merchant Account Information']['Proxy Type'] + ', ProxyValue: ' + decoded['Merchant Account Information']['Proxy Value'],
-            "userId": sender_phone_number
+            "userId": sender_phone_number,
+            "sessionId": session_id
             }
             #print(decoded) #{'Reverse Domain Name': 'SG.PAYNOW', 'Proxy Type': 'MSIDN', 'Proxy Value': '+6597988922', 'Editable': '1'}
             url = os.getenv("HOST_URL") + "/runModel"
@@ -101,7 +107,8 @@ def get_message_reply():
         else:
             data = {
             "message": "Not QR Code",
-            "userId": sender_phone_number
+            "userId": sender_phone_number,
+            "sessionId": session_id
             }
             url = os.getenv("HOST_URL") + "/runModel"
             response_data = requests.post(url, json=data)
@@ -118,25 +125,32 @@ def get_message_reply():
     else:
         data = {
             "message": incoming_message,
-            "userId": sender_phone_number
+            "userId": sender_phone_number,
+            "sessionId": session_id
         }
-        if Constants.OPENAIENGAGED == False:
-            print(Constants.OPENAIENGAGED)
+        #If openAPI is not engaged for this user, call dialogflow
+        if Constants.USER_SESSION[sender_phone_number][2] == False:
+            print(Constants.USER_SESSION[sender_phone_number][2])
             url = os.getenv("HOST_URL") + "/runModel"
             response_data = requests.post(url, json=data)
             res = json.loads(response_data.text)
             if res["endpoint"] == "/callChatGPT":
-                Constants.OPENAIENGAGED = True
+                Constants.USER_SESSION[sender_phone_number][2] = True
             response = setup_ocbc_api_request(response_data)
             dataStore = constructDataStore(sender_phone_number, incoming_message, response_data, response)
-            send_message(response, sender_phone_number, client,dataStore)
+        #If openAPI is engaged for this user, call chatGPT
         else:
-            print(Constants.OPENAIENGAGED)
+            client.messages.create(
+                from_='whatsapp:+14155238886',
+                body="Generating reply, please wait a moment...",
+                to=sender_phone_number
+                )
+            print(Constants.USER_SESSION[sender_phone_number][2])
             url = os.getenv("HOST_URL") + "/callChatGPT"
-            response4 = requests.post(url, json=data)
-            print(response4.text)
-            dataStore = constructDataStore(sender_phone_number, incoming_message, "GPT", response4.text)
-            send_message(response4.text, sender_phone_number, client,dataStore)
+            response = requests.post(url, json=data)
+            response = response.text
+            dataStore = constructDataStore(sender_phone_number, incoming_message, "GPT", response)
+        send_message(response, sender_phone_number, client,dataStore)
         return "Success"
 
 # ======= END ROUTES =======
@@ -365,6 +379,38 @@ def format_paynow_response(response, amount, proxyValue,type):
             )
     return approval_message
 
+# ---- Helper functions #
+def generate_shortened_hash(input_string):
+    md5_hash = hashlib.md5(input_string.encode())
+    shortened_hash = md5_hash.hexdigest()[:7]
+    return shortened_hash
+
+def create_session_key(userId):
+    current_timestamp = str(int(time.time()))
+    shortened_hash = generate_shortened_hash(userId+current_timestamp)
+    return shortened_hash
+
+def get_session_id(userId):
+    if userId in Constants.USER_SESSION:
+        session_id = Constants.USER_SESSION[userId][0]
+        create_time = Constants.USER_SESSION[userId][1]
+
+        if int(time.time()) - create_time >= 30*60: ## check if more then 30 min else create new one
+            session_id = create_session_key(userId)
+            user_sessionData = [session_id,int(time.time()),False, [
+                {"role": "system", "content": "You are an OCBC support assistant. Only answer questions related to OCBC. If you are not sure about the question, reply 'I am unable to find the answer for this. If you need help, contact the OCBC hotline at 1800 363 3333.' If the question is 'Stop' or 'End' , return 'False' without any other texts or punctuations. Word limit is 1000 characters."},
+            ]]
+            Constants.USER_SESSION[userId] = user_sessionData
+        else: ## update time
+            Constants.USER_SESSION[userId][1] = int(time.time())
+    else: # new user
+        session_id = create_session_key(userId)
+        user_sessionData = [session_id,int(time.time()), False, [
+                {"role": "system", "content": "You are an OCBC support assistant. Only answer questions related to OCBC. If you are not sure about the question, reply 'I am unable to find the answer for this. If you need help, contact the OCBC hotline at 1800 363 3333.' If the question is 'Stop' or 'End' , return 'False' without any other texts or punctuations. Word limit is 1000 characters."},
+            ]]
+        Constants.USER_SESSION[userId] = user_sessionData
+    print("USER SESSION: ", Constants.USER_SESSION)
+    return session_id
 
 def format_message(message, response):
     '''Returns the formatted message by replacing variables inside message with variables gotten from endpoints'''
@@ -399,7 +445,8 @@ def send_message(messageBody, recepientNumber, client, dataStore):
     body=messageBody,
     to=recepientNumber
     )
-    return
+
+    return message
 
 def constructDataStore(sender_phone_number, message, response_data, response):
     if response_data == "GPT":
