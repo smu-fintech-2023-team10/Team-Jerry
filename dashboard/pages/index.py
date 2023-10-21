@@ -472,7 +472,9 @@ def render_overview_page(pathname, metric_choice):
         sentiment_distribution_fig.update_layout(title_x=0.5)
 
         # generate datatable
-        sentiment_datatable = sentiment_df.drop("sentiment_label_score", axis=1).rename(columns={'unrecognised_msgs': 'Unrecognized Messages', 'sentiment_label': 'Sentiment Label', 'sentiment_score': 'Sentiment Score'})
+        inappropriate_words = ["fk you", "fk", "fuck", "bitch"]
+        filtered_sentiment_df = sentiment_df[~sentiment_df['unrecognised_msgs'].str.contains('|'.join(inappropriate_words), case=False)]
+        sentiment_datatable = filtered_sentiment_df.drop("sentiment_label_score", axis=1).rename(columns={'unrecognised_msgs': 'Unrecognized Messages', 'sentiment_label': 'Sentiment Label', 'sentiment_score': 'Sentiment Score'})
         sentiment_datatable = datatable(sentiment_datatable)
 
         # generate user metrics table
