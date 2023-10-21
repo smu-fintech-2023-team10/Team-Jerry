@@ -2,6 +2,8 @@ from time import strftime, strptime
 import dash
 import dash_table
 import dash_bootstrap_components as dbc
+import matplotlib.pyplot as plt
+from dash_holoniq_wordcloud import DashWordcloud
 from dash import html
 from dash import dcc
 import dash_daq as daq
@@ -13,9 +15,11 @@ from sklearn.cluster import DBSCAN
 from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.util import ngrams
+from wordcloud import WordCloud
 import wordnet
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
+from collections import defaultdict
 import json
 import numpy as np
 
@@ -146,12 +150,12 @@ def datatable(df, function=''):
         },
         style_data_conditional=[
             {
-                "if": {"state": "selected"},
-                "backgroundColor": "inherit !important",
+                'if': {'row_index': 'odd'},
+                'backgroundColor': 'rgb(230, 230, 230)',
                 "border": "inherit !important",
             },
             {
-                "if": {"state": "active"},
+                "if": {"state": "selected"},
                 "backgroundColor": "inherit !important",
                 "border": "inherit !important",
             },
@@ -253,9 +257,13 @@ def render_page(pathname):
                             html.Div([
                             html.H2("Popular Topics"),
                             html.Div([
-                                    html.Div(id='popular_topic_list')
-                                    ], style={'margin-top': '1rem'})
-                            ], style={'padding':'1rem', 'height':'512px'})
+                                    html.Div(id='popular_topic_list'),
+                                    ])
+                            ])
+                            ,
+                            html.Div([
+                                html.Div(id='wordcloud-fig', style={'margin-left': '2rem'})
+                            ])
             ]), style={'marginLeft': '1rem', 'width': '34%', 'display': 'flex-wrap'}
                 ), # Popular Topics
             ], style={'display': 'flex'}), # for Metrics and Popular Topics
@@ -371,7 +379,7 @@ def render_page(pathname):
 # Rendering Overview Page Components
 
 @app.callback(
-    [Output(component_id='bank-function-distribution-fig', component_property='figure'), Output(component_id='sentiment-distribution-fig', component_property='figure'), Output(component_id='overview-metrics-fig', component_property='figure'), Output(component_id='overview-datatable', component_property='children'), Output(component_id='popular_topic_list', component_property='children')],
+    [Output(component_id='bank-function-distribution-fig', component_property='figure'), Output(component_id='sentiment-distribution-fig', component_property='figure'), Output(component_id='overview-metrics-fig', component_property='figure'), Output(component_id='overview-datatable', component_property='children'), Output(component_id='popular_topic_list', component_property='children'), Output(component_id='wordcloud-fig', component_property='children')],
     [Input("url", "pathname"), Input(component_id='overview-metric-dropdown', component_property='value')]
 )
 def render_overview_page(pathname, metric_choice):
@@ -407,8 +415,6 @@ def render_overview_page(pathname, metric_choice):
         sentiment_distribution = sentiment_df.groupby(
             ["sentiment_label"]).size().reset_index(name="sentiment_distribution")
 
-        msg_df = pd.read_csv('../csv/unrecognised_msgs.csv')
-
         # Pre-processing Unrecognised Messages, Stopword removal and Lemmatization
         stop_words = set(stopwords.words('english'))
         stop_words.add('like')
@@ -422,7 +428,7 @@ def render_overview_page(pathname, metric_choice):
             words = [lemmatizer.lemmatize(word) for word in words]
             return ' '.join(words)
 
-        msg_df['Preprocessed Messages'] = msg_df['unrecognised_msgs'].apply(
+        overview_df['Preprocessed Messages'] = overview_df['message'].apply(
             preprocess_text)
 
         popular_topic_list = []
@@ -430,13 +436,13 @@ def render_overview_page(pathname, metric_choice):
         # Extract Trigrams from Pre-processed messages
         count_vectorizer_trigram = CountVectorizer(ngram_range=(1, 1))
         X1_trigram = count_vectorizer_trigram.fit_transform(
-            msg_df['Preprocessed Messages'])
+            overview_df['Preprocessed Messages'])
         features_trigram = (count_vectorizer_trigram.get_feature_names_out())
 
         # Applying TFIDF for Trigrams
         tf_vectorizer_trigram = TfidfVectorizer(ngram_range=(1, 1))
         X2_trigram = tf_vectorizer_trigram.fit_transform(
-            msg_df['Preprocessed Messages'])
+            overview_df['Preprocessed Messages'])
         scores = (X2_trigram.toarray())
 
         # Getting top 5 Trigrams
@@ -486,8 +492,27 @@ def render_overview_page(pathname, metric_choice):
             yaxis_title='Daily {}'.format(metric_choice))
         overview_user_metrics_fig.update_traces(line={'width': 3})
         overview_user_metrics_fig.update_xaxes(rangeslider_visible=True)
+        
+        word_counts = defaultdict(int)
 
-        return bank_function_distribution_fig, sentiment_distribution_fig, overview_user_metrics_fig, sentiment_datatable, html.Ul(popular_topic_list_items)
+        for message in overview_df['message']:
+            message = message.lower()  # Convert the message to lowercase for case-insensitive counting
+            word_counts[message] += 9
+        word_count_list = [[word, count] for word, count in word_counts.items()]
+        word_count_list.sort(key=lambda x: x[1], reverse=True)
+        
+        wordcloud_fig = DashWordcloud(
+                        list=word_count_list,
+                        width=300, height=210,
+                        gridSize=16,
+                        color='#f0f0c0',
+                        backgroundColor='#001f00',
+                        shuffle=False,
+                        rotateRatio=0.3,
+                        shrinkToFit=True,
+                        shape='circle',
+                        )
+        return bank_function_distribution_fig, sentiment_distribution_fig, overview_user_metrics_fig, sentiment_datatable, html.Ul(popular_topic_list_items), wordcloud_fig
 
     else:
         PreventUpdate
