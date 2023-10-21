@@ -39,14 +39,12 @@ Scan the QR code and follow the instructions below
 **Moving Forward**
 - Host on AWS or GCP so dont need use webhook as the ngrok webhook always changes everytime the app is re-ran, then must go inside twilio config to change.
 
-## Admin Dashboard
-The purpose of the dashboard is to assist in future retraining of the model.
 
-To get started, run the following commands:
+To get started, run the following commands in your command line interface:
 1. cd dashboard/pages
 2. python index.py
 
-Leave feedback for the dashboard here:
-https://docs.google.com/forms/d/e/1FAIpQLSdj8aK-9pncTx83TzB-n8ayAfqvDvyBw_Pj-e68xLdZLpuiQA/viewform?usp=pp_url
+Leave feedback for the dashboard here: https://smu.sg/fyp_ocbc_whatsapp_banking_dashboard_feedback
+
 
 ocbcbanking123@
