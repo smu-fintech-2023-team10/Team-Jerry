@@ -1,3 +1,4 @@
+from time import strftime, strptime
 import dash
 import dash_table
 import dash_bootstrap_components as dbc
@@ -114,7 +115,23 @@ scan_to_pay_df = pd.read_gbq(scan_to_pay_df_sql, project_id=project_id, dialect=
 overview_df = pd.read_gbq(overview_df_sql, project_id=project_id, dialect='standard', credentials=credentials)
 
 # Function to generate Data Tables
-def datatable(df):
+def datatable(df, function=''):
+    if function in ['Paynow Transfer', 'Scan To Pay', 'Check Balance']:
+        df['datee'] = df['date'].astype(str)
+        df['datee'] = df['datee'].apply(lambda x: x[:11])
+        df = df.drop('date', axis=1)
+        df.insert(0, 'datee', df.pop('datee'))
+
+        if function in ['Paynow Transfer', 'Scan To Pay']:
+            df = df.rename(columns={'session_id': 'Session ID', 'bank_function': 'Bank Function', 'datee': 'Date', 'account_number': 'Sender Mobile Number', 'recipient_number': 'Recipient Mobile Number/ NRIC', 'amount': 'Amount', 'session_rating': 'Session Rating'})
+        else:
+            df['see_past_transactions'] = df['see_past_transactions'].apply(lambda x: x[3:] if x is not None else x)
+            df = df.rename(columns={'session_id': 'Session ID', 'bank_function': 'Bank Function', 'datee': 'Date', 'account_number': 'Balance', 'see_past_transactions': 'See Past Transactions', 'session_rating': 'Session Rating'})
+
+    df = df.fillna("na")
+
+    print(df)
+
     return dash_table.DataTable(
         data=df.to_dict('records'),
         columns=[{'id': c, 'name': c} for c in df.columns],
@@ -455,7 +472,7 @@ def render_overview_page(pathname, metric_choice):
         sentiment_distribution_fig.update_layout(title_x=0.5)
 
         # generate datatable
-        sentiment_datatable = sentiment_df.drop("sentiment_label_score", axis=1).rename(columns={'unrecognised_msgs': 'Unrecognized Messages', 'sentiment_label': 'Sentiment Label'})
+        sentiment_datatable = sentiment_df.drop("sentiment_label_score", axis=1).rename(columns={'unrecognised_msgs': 'Unrecognized Messages', 'sentiment_label': 'Sentiment Label', 'sentiment_score': 'Sentiment Score'})
         sentiment_datatable = datatable(sentiment_datatable)
 
         # generate user metrics table
@@ -501,7 +518,6 @@ def render_business_function_pages(pathname, metric_choice):
             df = check_balance_df
             avg_rating = get_average_rating(df)
 
-
         if pathname == "/paynow-transfer":
             bf = "Paynow Transfer"
             df = paynow_transfer_df
@@ -520,7 +536,7 @@ def render_business_function_pages(pathname, metric_choice):
         fig.update_xaxes(rangeslider_visible=True)
 
         # generate datable
-        user_table = datatable(df)
+        user_table = datatable(df, bf)
 
         return fig, user_table, avg_rating
 
