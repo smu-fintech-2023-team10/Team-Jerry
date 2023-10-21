@@ -1,6 +1,7 @@
 from time import strftime, strptime
 import dash
 import dash_table
+import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import html
 from dash import dcc
@@ -130,52 +131,36 @@ def datatable(df, function=''):
 
     df = df.fillna("na")
 
-    return dash_table.DataTable(
-        data=df.to_dict('records'),
-        columns=[{'id': c, 'name': c} for c in df.columns],
-        # sort_action="native",
-        # sort_mode="multi",
-        export_columns="all",
-        export_format="csv",
-        export_headers="names",
-        page_action="native",
-        page_size=20,
-        style_data={
-            'color': 'black',
-            'backgroundColor': 'white'
-        },
-        style_data_conditional=[
-            {
-                "if": {"state": "selected"},
-                "backgroundColor": "inherit !important",
-                "border": "inherit !important",
-            },
-            {
-                "if": {"state": "active"},
-                "backgroundColor": "inherit !important",
-                "border": "inherit !important",
-            },
-            {
-                'if': {
-                    'filter_query': '{Sentiment Label} eq "POSITIVE"',
+    col_defs = []
+    for i in df.columns:
+        col_defs.append({"field": i})
+
+    return html.Div(
+        [
+            html.Button("Download CSV", id="csv-button", n_clicks=0),
+            dag.AgGrid(
+                id="export-data-grid",
+                rowData=df.to_dict("records"),
+                defaultColDef={"sortable": True, "resizable": True},
+                columnDefs=col_defs,
+                dashGridOptions={"pagination": True, "paginationPageSize":10},
+                columnSize="sizeToFit",
+                csvExportParams={
+                    "fileName": "jerry_whatsapp_banking.csv",
                 },
-                'backgroundColor': '#C5E2C4',
-            },
-        ],
-        style_header={
-            'backgroundColor': 'rgb(230, 230, 230)',
-            'color': 'black',
-            'fontWeight': 'bold'
-        },
-        style_cell={'textOverflow': 'ellipsis', 'maxWidth': '150px'},
-        tooltip_data=[
-            {
-                column: {'value': str(value), 'type': 'markdown'}
-                for column, value in row.items()
-            } for row in df.to_dict('records')
-        ],
-        style_table={'sort_button': {'color': 'blue'}}
+                className="ag-theme-alpine",
+            )
+        ]
     )
+
+@app.callback(
+    Output("export-data-grid", "exportDataAsCsv"),
+    Input("csv-button", "n_clicks"),
+)
+def export_data_as_csv(n_clicks):
+    if n_clicks:
+        return True
+    return False
 
 # Function to generate User Metrics Chart
 

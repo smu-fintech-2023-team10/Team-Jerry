@@ -12,3 +12,12 @@
     cursor: pointer;
     margin-bottom: 7px;
 }
+
+#csv-button {
+    background-color: #007BFF;
+    color: #FFFFFF;
+    border: none;
+    padding: 10px 20px;
+    margin-bottom: 8px;
+    border-radius: 5px;
+}
