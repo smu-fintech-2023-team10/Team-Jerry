@@ -440,7 +440,7 @@ def render_overview_page(pathname, metric_choice):
         for x in trigram_words['term'].head(5):
             if 'do' not in x:
                 popular_topic_list.append("'" + x + "'")
-        popular_topic_list_items = [html.Li(html.H3(dbc.Badge(item, color="white", text_color="info", className="border border-info border-2 me-1"))) for item in popular_topic_list]
+        popular_topic_list_items = [html.Li(html.H3(dbc.Badge(item, color="white", text_color="info", className="border border-info border-2 me-1")), className="no-bullet-list") for item in popular_topic_list]
 
         sentiment_distribution_fig = px.pie(
             sentiment_distribution,
@@ -482,15 +482,17 @@ def render_overview_page(pathname, metric_choice):
 
         for message in overview_df['message']:
             message = message.lower()  # Convert the message to lowercase for case-insensitive counting
-            word_counts[message] += 9
+            if message not in ["fk you", "fk", "fuck", "bitch", "brandon", "brandondc"]:
+                word_counts[message] += 9
         word_count_list = [[word, count] for word, count in word_counts.items()]
         word_count_list.sort(key=lambda x: x[1], reverse=True)
         
         wordcloud_fig = DashWordcloud(
                         list=word_count_list,
-                        width=300, height=210,
+                        width=300, height=220,
                         gridSize=16,
-                        color='#00000',
+                        # color= '#FFFDD0',
+                        color='white',
                         backgroundColor="#92BFD8",
                         shuffle=False,
                         rotateRatio=0.3,
@@ -534,7 +536,6 @@ def render_business_function_pages(pathname, metric_choice):
         # generate user metric table
         dff = get_metric_df(df, metric_choice, bf)
         y_axis = "{}".format(bf)
-        y_axis_string = "Daily {} {}".format(bf, metric_choice)
         fig = px.line(dff, x="date", y=y_axis)
         fig.update_xaxes(rangeslider_visible=True)
 
