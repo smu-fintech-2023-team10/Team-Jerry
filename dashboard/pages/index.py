@@ -323,26 +323,25 @@ def render_page(pathname):
                                       )]
                     ), style={'width': '66%', 'display': 'inline'}
                 ),
-                html.Div(
-                    dmc.Paper(
-                        radius="md",
-                        withBorder=True,
-                        shadow='xs',
-                        p='sm',
-                        children=[
-                        html.Div([
-                        html.H3("Avg. User Rating"),
-                        daq.Gauge(
-                        id='business-function-rating',
-                        value=3,
-                        showCurrentValue=True,
-                        # label='Avg. User Rating',
-                        max=5,
-                        min=0,
-                        )
-                        ], style={'padding':'1rem', 'height':'512px'})
-                        ]
-                    ), style={'marginLeft': '1rem', 'width': '34%', 'display': 'inline'}
+                 html.Div(
+                     dmc.Paper(
+                         radius="md",
+                         withBorder=True,
+                         shadow='xs',
+                         p='sm',
+                         children=[
+                         html.Div([
+                         html.H3("Avg. User Rating"),
+                         daq.Gauge(
+                         id='business-function-rating',
+                         value=3,
+                         showCurrentValue=True,
+                         max=5,
+                         min=0,
+                         )
+                         ], style={'height':'512px', 'textAlign': 'center'})
+                         ]
+                     ), style={'marginLeft': '1rem', 'width': '34%'}
                 )
             ], style={'display': 'flex'}),
             html.Div(
@@ -509,7 +508,7 @@ def render_overview_page(pathname, metric_choice):
 
 @app.callback(
     [Output(component_id='business-function-graph', component_property='figure'),
-     Output(component_id='datatable', component_property='children'),Output(component_id='business-function-rating', component_property='value')],
+     Output(component_id='datatable', component_property='children'), Output(component_id='business-function-rating', component_property='value')],
     [Input("url", "pathname"), Input(
         component_id='metric-dropdown', component_property='value')]
 )
