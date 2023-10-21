@@ -16,6 +16,7 @@ import wordnet
 from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 import json
+import numpy as np
 
 
 # big query connector
@@ -83,11 +84,6 @@ top_bar = html.Div(
     style={"background-color": "#ffffff", },
 )
 
-# # Import Datasets
-# check_balance_df = pd.read_csv('../csv/check_balance.csv')
-# paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
-# scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
-
 ## big query connector
 credentials = service_account.Credentials.from_service_account_file('smu-fyp-396613-6aefbba11d63.json')
 project_id = 'smu-fyp-396613'
@@ -122,8 +118,8 @@ def datatable(df):
     return dash_table.DataTable(
         data=df.to_dict('records'),
         columns=[{'id': c, 'name': c} for c in df.columns],
-        sort_action="native",
-        sort_mode="multi",
+        # sort_action="native",
+        # sort_mode="multi",
         export_columns="all",
         export_format="csv",
         export_headers="names",
@@ -149,7 +145,13 @@ def datatable(df):
             'color': 'black',
             'fontWeight': 'bold'
         },
-        style_cell={'textOverflow': 'ellipsis', 'maxWidth': '150px'}
+        style_cell={'textOverflow': 'ellipsis', 'maxWidth': '150px'},
+        tooltip_data=[
+            {
+                column: {'value': str(value), 'type': 'markdown'}
+                for column, value in row.items()
+            } for row in df.to_dict('records')
+        ],
     )
 
 # Function to generate User Metrics Chart
@@ -313,12 +315,12 @@ def render_page(pathname):
                         p='sm',
                         children=[
                         html.Div([
-                        html.H3("User Ratings"),
+                        html.H3("Avg. User Rating"),
                         daq.Gauge(
                         id='business-function-rating',
                         value=3,
                         showCurrentValue=True,
-                        label='Avg. User Rating',
+                        # label='Avg. User Rating',
                         max=5,
                         min=0,
                         )
@@ -352,10 +354,6 @@ def render_page(pathname):
 def render_overview_page(pathname, metric_choice):
 
     if pathname == "/":
-        # ## Import Datasets
-        # check_balance_df = pd.read_csv('../csv/check_balance.csv')
-        # paynow_transfer_df = pd.read_csv('../csv/paynow_transfer.csv')
-        # scan_to_pay_df = pd.read_csv('../csv/scan_to_pay.csv')
 
         # generate bank function distribution chart
         combined_df = pd.concat(
@@ -376,6 +374,7 @@ def render_overview_page(pathname, metric_choice):
 
         # generate sentiment distribution chart
         sentiment_df = pd.read_csv("../csv/sentiments.csv")
+
         sentiment_df["sentiment_label_score"] = sentiment_df["sentiment_label_score"].apply(
             lambda x: x.replace("'", "\""))
         sentiment_df["sentiment_label"] = sentiment_df["sentiment_label_score"].apply(
@@ -456,8 +455,8 @@ def render_overview_page(pathname, metric_choice):
         sentiment_distribution_fig.update_layout(title_x=0.5)
 
         # generate datatable
-        sentiment_datatable = datatable(
-            sentiment_df.drop("sentiment_label_score", axis=1))
+        sentiment_datatable = sentiment_df.drop("sentiment_label_score", axis=1).rename(columns={'unrecognised_msgs': 'Unrecognized Messages', 'sentiment_label': 'Sentiment Label'})
+        sentiment_datatable = datatable(sentiment_datatable)
 
         # generate user metrics table
         bf_csv = {"Check Balance": check_balance_df,
@@ -519,9 +518,6 @@ def render_business_function_pages(pathname, metric_choice):
         y_axis_string = "Daily {} {}".format(bf, metric_choice)
         fig = px.line(dff, x="date", y=y_axis)
         fig.update_xaxes(rangeslider_visible=True)
-
-        # generate user rating chart
-        
 
         # generate datable
         user_table = datatable(df)
