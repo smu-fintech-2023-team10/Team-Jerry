@@ -130,8 +130,6 @@ def datatable(df, function=''):
 
     df = df.fillna("na")
 
-    print(df)
-
     return dash_table.DataTable(
         data=df.to_dict('records'),
         columns=[{'id': c, 'name': c} for c in df.columns],
@@ -148,17 +146,24 @@ def datatable(df, function=''):
         },
         style_data_conditional=[
             {
-                'if': {'row_index': 'odd'},
-                'backgroundColor': 'rgb(230, 230, 230)',
-            },
-            {
                 "if": {"state": "selected"},
                 "backgroundColor": "inherit !important",
                 "border": "inherit !important",
-            }
+            },
+            {
+                "if": {"state": "active"},
+                "backgroundColor": "inherit !important",
+                "border": "inherit !important",
+            },
+            {
+                'if': {
+                    'filter_query': '{Sentiment Label} eq "POSITIVE"',
+                },
+                'backgroundColor': '#C5E2C4',
+            },
         ],
         style_header={
-            'backgroundColor': 'rgb(200, 200, 200)',
+            'backgroundColor': 'rgb(230, 230, 230)',
             'color': 'black',
             'fontWeight': 'bold'
         },
@@ -169,6 +174,7 @@ def datatable(df, function=''):
                 for column, value in row.items()
             } for row in df.to_dict('records')
         ],
+        style_table={'sort_button': {'color': 'blue'}}
     )
 
 # Function to generate User Metrics Chart
@@ -400,21 +406,6 @@ def render_overview_page(pathname, metric_choice):
             lambda x: json.loads(x)["score"])
         sentiment_distribution = sentiment_df.groupby(
             ["sentiment_label"]).size().reset_index(name="sentiment_distribution")
-
-        # Generate List of Popular Topics
-        # overview_df = pd.read_csv('../csv/overview.csv')
-        # # Data Clean-up
-        # overview_df['unrecognised_msgs'] = overview_df['unrecognised_msgs'].str.replace(
-        #     '[', '').str.replace(']', '')
-        # msg_list_v1 = []
-        # for msg in overview_df['unrecognised_msgs']:
-        #     msg_list_v1.append(msg.split(','))
-        # msg_list_v2 = []
-        # for msg in msg_list_v1:
-        #     for x in msg:
-        #         msg_list_v2.append(x.replace('"', '').strip())
-        # msg_df = pd.DataFrame(msg_list_v2, columns=['unrecognised_msgs'])
-        # msg_df = msg_df.dropna()
 
         msg_df = pd.read_csv('../csv/unrecognised_msgs.csv')
 
