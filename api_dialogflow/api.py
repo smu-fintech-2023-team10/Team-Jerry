@@ -94,7 +94,7 @@ def processRawDFMessage(raw_message,intent_id,userId):
     print("RAW MESSAGE:",raw_message)
     response_data = {
         "message": "",
-        "endpoint": "",
+        "response_data": "",
         "data": "",
         "intent":intent_id,
     }
@@ -160,5 +160,4 @@ def detect_intent_texts(agent, text, language_code):
         logging.error("Error %s: %s", response.status_code, response.text)
 
     return response.json()  # return the response in case it's needed in future
-
 

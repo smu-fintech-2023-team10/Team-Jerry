@@ -1,0 +1,14 @@
+.nav-pills .nav-link.active {
+    color: #fff;
+    background-color: #0B59CA;
+}
+
+.export {
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 16px;
+    cursor: pointer;
+    margin-bottom: 7px;
+}
