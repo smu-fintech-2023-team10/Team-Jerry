@@ -97,6 +97,7 @@ def processRawDFMessage(raw_message,intent_id,userId):
         "response_data": "",
         "data": "",
         "intent":intent_id,
+        "endpoint": "",
     }
     idx = 0
     for message_data in raw_message:
@@ -119,7 +120,7 @@ def processRawDFMessage(raw_message,intent_id,userId):
             idx+=1
         except Exception as e:
             print("Session Ended")
-            response_data["message"] += "\nYou have been logged out. Thank you!\nEnter 'start'/'hi' to start the chatbot"
+            response_data["message"] += "\n\nYou have been logged out. \n\nEnter 'start'/'hi' to start the chatbot"
             del Constants.USER_SESSION[userId]  # User end session, remove session for user
     return response_data
 

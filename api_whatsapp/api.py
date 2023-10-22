@@ -184,7 +184,7 @@ def setup_ocbc_api_request(res):
         CurrencyCode= response['Results']['CurrencyCode']
         AvailableBalance= response['Results']['AvailableBalance']
         BalanceAsOfDate= response['Results']['BalanceAsOfDate']
-        resString = f'{CurrencyCode} {AvailableBalance}, as of : {BalanceAsOfDate}'
+        resString = f'{CurrencyCode} ${AvailableBalance}, as of : {BalanceAsOfDate}'
         # helperFunctions.send_message(response.text, phone_number, client)
         return {"balance": resString}
     

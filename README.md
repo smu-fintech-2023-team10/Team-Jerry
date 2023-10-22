@@ -10,20 +10,11 @@ pip install flask_session --user
 python main.py
 
 ```
-- Next, you need to install ngrok by just double clicking ngrok.exe
+- Next, Go to terminal, click on "PORTS" tab and forward the port to 5000.
+- Once forwarded, change port visibility to public
 
-You will see this webhook created for receiving messages from Twilio
-```
-Session Expires               1 hour, 59 minutes
-Version                       2.3.41
-Region                        United States (us)
-Web Interface                 http://127.0.0.1:4042
-Forwarding                    http://f0fb-118-200-109-192.ngrok.io -> http://localhost:5000
-Forwarding                    https://f0fb-118-200-109-192.ngrok.io -> http://localhost:5000
-
-```
-Copy the webhook with 'https' and change it in the twilio consile + /getReply
-e.g. https://f0fb-118-200-109-192.ngrok.io/getReply
+Copy the forwarded address and change it in the twilio consile + /getReply
+e.g. https://4sp0b7wl-5000.asse.devtunnels.ms/getReply
 ![Alt text](images/TwilioConsole-1.png)
 
 **Twilio Account:**
@@ -31,12 +22,7 @@ e.g. https://f0fb-118-200-109-192.ngrok.io/getReply
 - Password: Gljr4231@Leefamily22
 
 **Join the Twilio sandbox to test on own phone**
-Scan the QR code and follow the instructions below
-![Alt text](images/TwilioConsole-2.png)
+Send join shoot-forgot to the number +1 (415) 523-8886
 
-- Change the auth_token to the most recent one as seen in the console.
-
-**Moving Forward**
-- Host on AWS or GCP so dont need use webhook as the ngrok webhook always changes everytime the app is re-ran, then must go inside twilio config to change.
 
 ocbcbanking123@
