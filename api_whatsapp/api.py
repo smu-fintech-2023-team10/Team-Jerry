@@ -350,11 +350,13 @@ def format_paynow_response(response, amount, proxyValue,type):
             transaction_time = response_data["Results"]["TransactionTime"]
             transaction_date = response_data["Results"]["TransactionDate"]
             available_balance = response_data["Results"]["AvailableBalance"]
+            avail_bal_formatted = format(available_balance, ".2f")
+            amount_formatted = format(float(amount), ".2f")
             approval_message = (
-                f"Your PayNow request of ${amount} to {proxyValue} is successful.\n"
+                f"Your PayNow request of ${amount_formatted} to {proxyValue} is successful.\n"
                 f"Transaction Time: {transaction_time}\n"
                 f"Transaction Date: {transaction_date}\n"
-                f"Available Balance: {available_balance}"
+                f"Available Balance: ${avail_bal_formatted}"
             )
         else:
             error_msg = response_data["Results"]["ErrorMsg"]
@@ -370,8 +372,9 @@ def format_paynow_response(response, amount, proxyValue,type):
             ocbc_refno = response_data["Results"]["ocbcreferenceNo"]
             transaction_refno = response_data["Results"]["TransactionReferenceNo"]
             transaction_description = response_data["Results"]["TransactionDescription"]
+            amount_formatted = format(float(amount), ".2f")
             approval_message = (
-                f"Your PayNow request of ${amount} to {proxyValue} is successful.\n"
+                f"Your PayNow request of ${amount_formatted} to {proxyValue} is successful.\n"
                 f"OCBC Reference Number: {ocbc_refno}\n"
                 f"Transaction Reference: {transaction_refno}\n"
                 f"Transaction Description: {transaction_description}\n"
