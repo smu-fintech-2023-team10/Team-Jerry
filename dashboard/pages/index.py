@@ -502,9 +502,17 @@ def render_overview_page(pathname, metric_choice):
 
     else:
         PreventUpdate
+        empty_figure = {'data': [], 'layout': {}}
+
+        return (empty_figure,
+            empty_figure,
+            empty_figure,
+            html.Div(),
+            html.Div(),
+            html.Div())
+    
 
 # Rendering Components for all BF Pages
-
 
 @app.callback(
     [Output(component_id='business-function-graph', component_property='figure'),
