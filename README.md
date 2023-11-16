@@ -3,9 +3,10 @@
 **Setup**
 ```
 #Install dependencies
-pip install -r requirements.txt
+pip install -r requirements.txt --user
 pip install firebase-admin --user
 pip install flask_session --user
+pip install openai==0.28 --user
 #Run
 python main.py
 

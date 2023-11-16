@@ -1,5 +1,4 @@
 # External imports
-from flask_ngrok import run_with_ngrok
 from flask import Flask, request, session
 from apscheduler.schedulers.background import BackgroundScheduler
 import firebase_admin
