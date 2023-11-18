@@ -494,7 +494,7 @@ def render_overview_page(pathname, metric_choice):
                         color='white',
                         backgroundColor="#92BFD8",
                         shuffle=False,
-                        rotateRatio=0.3,
+                        rotateRatio=0.0,
                         shrinkToFit=True,
                         shape='circle',
                         )
