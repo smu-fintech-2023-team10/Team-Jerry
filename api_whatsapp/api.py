@@ -21,7 +21,6 @@ from dotenv import load_dotenv
 from .components.qrDecoder import decode_paynow_qr
 from .components.parseQrImageToString import parseQrToString
 
-
 # Internal imports
 import Constants
 from api_firestore import create_app, db_reference
@@ -41,18 +40,15 @@ def refresh_twilio_auth_token():
     # Get a reference to the specific user node using the provided user_id
     token = root_ref.child('auth_token').child('token').get()
     # Shut down the scheduler when exiting the app
-    print("start")
+    print("Starting... Refreshing Twilio Token... DO NOT CANCEL YET")
     account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
     auth_token = token
-    print(auth_token)
     client = Client(account_sid, auth_token)
     auth_token_promotion = client.accounts.v1.auth_token_promotion().update()
     new_primary_auth_token = auth_token_promotion.auth_token
-    client = Client(account_sid, new_primary_auth_token)
-    print(client)
     secondary_auth_token = client.accounts.v1.secondary_auth_token().create()
     new_secondary_auth_token = secondary_auth_token.secondary_auth_token
-
+    client = Client(account_sid, new_primary_auth_token)
     auth_token_ref = root_ref.child('auth_token')
     current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
     auth_token_ref.update({
@@ -60,7 +56,7 @@ def refresh_twilio_auth_token():
         'token': new_primary_auth_token,
         'time': current_time
     })
-    print("Token Updated")
+    print("Token Updated... Now can cancel if you want")
     return client
 
 @whatsappMS.route("/getReply", methods=['POST'])
@@ -230,19 +226,44 @@ def setup_ocbc_api_request(res):
     def paynow():
         #Setup for Enquiry
         payloadData = json.loads(data)
+        print(payloadData)
+        type = payloadData.get('type')
         amount = payloadData.get('transferAmount')
-        phoneNumber = payloadData.get('phoneNumber')
+        #NOTE: HARDCODED VALUE FOR NOW
         accountNumber = payloadData.get('bankAccountNumber')
-        nric = payloadData.get('nric') 
-        proxyData = getProxy(phoneNumber, nric)
-        setupData = {
-            "endpoint": "/paynowEnquiry",
-            "data": json.dumps(proxyData),
-            "message": "{isValid}"
-        }
-        #Validated
-        paynowEnquire = setup_ocbc_api_request(setupData)
-        if paynowEnquire == "valid":
+        formatType = "NORMALPAYNOW"
+        if type == "Scan":
+            proxyData = {
+                "ProxyType" : payloadData.get('ProxyType'),
+                "ProxyValue" : payloadData.get('ProxyValue')
+            }
+
+            url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
+            payload = {
+                "Amount": amount,
+                "ProxyType": proxyData["ProxyType"],
+                "ProxyValue": proxyData["ProxyValue"],
+                "FromAccountNo": accountNumber
+            }
+
+            if proxyData["ProxyType"] == "UEN":
+                formatType = "CORPORATEPAYNOW"
+                url = Constants.OCBC_URL + '/corporate/paynowpayment/1.0/corporatePayment'
+                payload = {
+                    "TransactionDescription": "Whatsapp Banking Transfer",
+                    "Amount": amount,
+                    "ProxyType": proxyData["ProxyType"],
+                    "ProxyValue": proxyData["ProxyValue"],
+                    "FromAccountNo": accountNumber,
+                    "PurposeCode": "OTHR",
+                    "TransactionReferenceNo": "OrgXYZ1212123"
+                }
+
+        elif type == "Transfer":
+            phoneNumber = payloadData.get('phoneNumber')
+            nric = payloadData.get('nric') 
+            proxyData = getProxy(phoneNumber, nric) 
+
             url = Constants.OCBC_URL + "/paynow/1.0/sendPayNowMoney"
             payload = {
             "Amount": amount,
@@ -250,12 +271,13 @@ def setup_ocbc_api_request(res):
             "ProxyValue": proxyData["ProxyValue"],
             "FromAccountNo": accountNumber
             }
-            response = send_ocbc_api(url, "POST", payload)
 
-            approvalMessage = format_paynow_response(response, amount, proxyData["ProxyValue"])
-        #Not Valid
+        response = send_ocbc_api(url, "POST", payload)
+        if response["Success"]:
+            approvalMessage = format_paynow_response(response, amount, proxyData["ProxyValue"],formatType)
         else:
-            approvalMessage = f"Your PayNow request of ${amount} to {proxyData['ProxyValue']} is not approved. Please ensure you have entered a valid phone number or NRIC."
+            approvalMessage = f"Your PayNow request of ${amount} to {proxyData['ProxyValue']} is not approved. Please ensure you have entered a valid phone number/NRIC/UEN."
+        
         return {"approvalMessage": approvalMessage}
     def unableToFindReply():
         #Default no reply
@@ -288,6 +310,9 @@ def setup_ocbc_api_request(res):
 
     func = switch.get(endpoint, default_response)
     finalRes = func()
+    print("########THIS#######")
+    print(finalRes)
+    print(message)
     return format_message(message, finalRes)
     
 
@@ -317,7 +342,7 @@ def getProxy(phoneNumber, nric):
         "ProxyValue": proxyValue
     }
 
-def format_paynow_response(response, amount, proxyValue):
+def format_paynow_response(response, amount, proxyValue,type):
     '''Returns the approval message for PayNow'''
     if type == "NORMALPAYNOW":
         response_data = response
@@ -411,15 +436,70 @@ def generate_reply(message):
     return routes.get(message, "/unableToFindReply")
 
 
-def send_message(messageBody, recepientNumber, client):
+def send_message(messageBody, recepientNumber, client, dataStore):
     '''Sends a message to the user'''
+
+    #Logging
+    storeUnstructedChatData(recepientNumber, dataStore)
+
     message = client.messages.create(
     from_='whatsapp:+14155238886',
     body=messageBody,
     to=recepientNumber
     )
-    print(message.sid)
-    return
+
+    return message
+
+def constructDataStore(sender_phone_number, message, response_data, response):
+    if response_data == "GPT":
+        dataStore = {'userID': sender_phone_number,
+               'userMsg': message,
+               'intent': "GPT",
+               'response':response,
+            }
+        return dataStore
+    dataStore = {'userID': sender_phone_number,
+               'userMsg': message,
+               'intent': json.loads(response_data.text)['intent'],
+               'response':response,
+            }
+    dataStore['sessionId'] = get_session_id(sender_phone_number)
+
+    return dataStore
+
+def storeUnstructedChatData(userId,dataStore):
+    # Specify the key/id you want to use
+    timeNow = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    entry_id = userId+"_"+timeNow
+
+    chat_data_ref = root_ref.child('chatData')
+    dataStore['timestamp'] = timeNow
+    
+    # Set data with the custom key
+    res = chat_data_ref.child(entry_id).set(dataStore)
+    return res
+
+def constructDataStore(sender_phone_number, message, response_data, response):
+    dataStore = {'userID': sender_phone_number,
+               'userMsg': message,
+               'intent': json.loads(response_data.text)['intent'],
+               'response':response,
+            }
+    dataStore['sessionId'] = get_session_id(sender_phone_number)
+
+    return dataStore
+
+def storeUnstructedChatData(userId,dataStore):
+    # Specify the key/id you want to use
+    timeNow = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    entry_id = userId+"_"+timeNow
+
+    chat_data_ref = root_ref.child('chatData')
+    dataStore['timestamp'] = timeNow
+    
+    # Set data with the custom key
+    res = chat_data_ref.child(entry_id).set(dataStore)
+    return res
 
 client = refresh_twilio_auth_token()
 # Set up the scheduler
